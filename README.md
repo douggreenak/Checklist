@@ -9,6 +9,7 @@ A simple Android checklist app built for big, easy taps.
 - **Enter opens the next box** – press Enter after typing a task and a new one opens below it, ready to type
 - **Instant delete** – the red ✕ (or a left swipe) removes it right away, no "are you sure?" popup
 - **Custom themes** – Settings (⚙ on the home screen) lets you choose System / Light / Dark, a theme color that tints the whole app, and a pure-black dark mode
+- **Password protected and synced** – sign in with a password; your lists are stored in a MySQL/MariaDB database through a small PHP API (see [`server/`](server/README.md)), so they sync between devices and aren't public. They're also cached on the phone so the app works offline
 - Everything is saved automatically
 
 | | Lists | A list (completed shown) |

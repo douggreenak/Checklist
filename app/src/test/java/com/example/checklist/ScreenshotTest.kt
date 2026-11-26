@@ -38,7 +38,7 @@ private val teal = Palette[2]
 class ThemeScreenshots {
     @get:Rule val paparazzi = Paparazzi(deviceConfig = DeviceConfig.PIXEL_5.copy(nightMode = NightMode.NIGHT))
     @Test fun settingsDarkBlack() = paparazzi.snapshot {
-        ChecklistTheme(true, teal, pureBlack = true) { SettingsScreen(Settings(2, teal, true)) {} }
+        ChecklistTheme(true, teal, pureBlack = true) { SettingsScreen(Settings(2, teal, true), onBack = {}) }
     }
     @Test fun homeDarkBlackTeal() = paparazzi.snapshot {
         ChecklistTheme(true, teal, pureBlack = true) { HomeScreen(sampleLists(), "Thursday, November 26", {}, {}, {}) }
@@ -47,7 +47,7 @@ class ThemeScreenshots {
 
 class LightThemeScreenshots {
     @get:Rule val paparazzi = Paparazzi(deviceConfig = DeviceConfig.PIXEL_5)
-    @Test fun settingsLight() = paparazzi.snapshot { ChecklistTheme(false) { SettingsScreen(Settings()) {} } }
+    @Test fun settingsLight() = paparazzi.snapshot { ChecklistTheme(false) { SettingsScreen(Settings(), onBack = {}, account = "https://example.com/checklist/api.php", syncStatus = "Synced") } }
     @Test fun homeLightPink() = paparazzi.snapshot {
         ChecklistTheme(false, Palette[5]) { HomeScreen(sampleLists(), "Thursday, November 26", {}, {}, {}) }
     }
@@ -57,4 +57,9 @@ class LightThemeScreenshots {
                 ColorPicker(Palette[1], {}) } }
         }
     }
+}
+
+class LoginScreenshots {
+    @get:Rule val light = Paparazzi(deviceConfig = DeviceConfig.PIXEL_5)
+    @Test fun loginLight() = light.snapshot { ChecklistTheme(false) { LoginScreen("example.com/checklist", false, "Wrong password") { _, _ -> } } }
 }

@@ -17,7 +17,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
-fun SettingsScreen(settings: Settings, onBack: () -> Unit) {
+fun SettingsScreen(
+    settings: Settings, onBack: () -> Unit,
+    account: String? = null, syncStatus: String = "", onSignOut: () -> Unit = {}
+) {
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
@@ -62,6 +65,17 @@ fun SettingsScreen(settings: Settings, onBack: () -> Unit) {
                     Text("Saves battery on OLED screens", fontSize = 15.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 Switch(checked = settings.pureBlack, onCheckedChange = { settings.pureBlack = it })
+            }
+
+            if (account != null) {
+                Section("Account")
+                Text(account, fontSize = 18.sp, color = MaterialTheme.colorScheme.onBackground)
+                Text(syncStatus, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                OutlinedButton(
+                    onClick = onSignOut,
+                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                    shape = RoundedCornerShape(16.dp)
+                ) { Text("Sign out", fontSize = 18.sp, color = DeleteRed) }
             }
 
             OutlinedButton(

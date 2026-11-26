@@ -1,6 +1,7 @@
 package com.example.checklist
 
 import org.junit.Assert.*
+import org.junit.Assert.assertThrows
 import org.junit.Test
 
 class ModelTest {
@@ -26,5 +27,21 @@ class ModelTest {
         assertEquals(2, back.mode)
         assertEquals(0xFF00897B.toInt(), back.themeColor)
         assertTrue(back.pureBlack)
+    }
+}
+
+class ServerUrlTest {
+    @Test fun addsSchemeAndApiPath() =
+        assertEquals("https://example.com/checklist/api.php", normalizeServerUrl(" example.com/checklist/ "))
+
+    @Test fun keepsExplicitPhpFile() =
+        assertEquals("https://example.com/x/api.php", normalizeServerUrl("https://example.com/x/api.php"))
+
+    @Test fun rejectsPlainHttp() {
+        assertThrows(IllegalArgumentException::class.java) { normalizeServerUrl("http://example.com") }
+    }
+
+    @Test fun rejectsBlank() {
+        assertThrows(IllegalArgumentException::class.java) { normalizeServerUrl("  ") }
     }
 }

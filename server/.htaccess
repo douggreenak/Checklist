@@ -1,0 +1,10 @@
+# Pass the Authorization header through to PHP on hosts that strip it.
+RewriteEngine On
+RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+<Files "config*.php">
+    Require all denied
+</Files>
+<Files "config.php">
+    Require all denied
+</Files>
