@@ -2,15 +2,19 @@
 
 A simple Android checklist app built for big, easy taps.
 
-- **Large buttons** – 64dp check and delete buttons, a 72dp "Add item" button
-- **Enter opens the next box** – press Enter after typing an item and a new item opens below it, ready to type
-- **Instant delete** – the red ✕ removes an item right away, no "are you sure?" popup
+- **Multiple lists** – a home screen of lists (like Microsoft To Do); tap a list to open it, rename it by tapping its title
+- **Swipe gestures** – swipe a task **right** to mark it done (or not done), **left** to delete it; swipe a list left to delete it
+- **Completed tasks** – done tasks move into a collapsible "Completed (n)" section you can show or hide
+- **Large buttons** – 64dp check and delete buttons, a 72dp "Add" button
+- **Enter opens the next box** – press Enter after typing a task and a new one opens below it, ready to type
+- **Instant delete** – the red ✕ (or a left swipe) removes it right away, no "are you sure?" popup
 - **Light and dark mode** – follows the system setting
-- Your list is saved automatically
+- Everything is saved automatically
 
-| Light | Dark |
-|-------|------|
-| ![Light mode](app/src/test/snapshots/images/com.example.checklist_LightScreenshotTest_light.png) | ![Dark mode](app/src/test/snapshots/images/com.example.checklist_DarkScreenshotTest_dark.png) |
+| | Lists | A list (completed shown) |
+|---|---|---|
+| Light | ![](app/src/test/snapshots/images/com.example.checklist_LightScreenshots_home.png) | ![](app/src/test/snapshots/images/com.example.checklist_LightScreenshots_list.png) |
+| Dark | ![](app/src/test/snapshots/images/com.example.checklist_DarkScreenshots_home.png) | ![](app/src/test/snapshots/images/com.example.checklist_DarkScreenshots_list.png) |
 
 ## Build and test
 
