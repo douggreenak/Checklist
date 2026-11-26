@@ -62,7 +62,18 @@ class MainActivity : ComponentActivity() {
                     inSettings -> SettingsScreen(
                         settings, onBack = { inSettings = false },
                         account = session.server, syncStatus = session.status,
-                        onSignOut = { session.signOut(); inSettings = false; openId = null }
+                        onSignOut = { session.signOut(); inSettings = false; openId = null },
+                        onChangePassword = { current, new ->
+                            try {
+                                val newToken = withContext(Dispatchers.IO) { Api(session.server).changePassword(session.token ?: "", current, new) }
+                                session.signIn(session.server, newToken)
+                                null
+                            } catch (e: ApiException) {
+                                e.message ?: "Couldn't change the password"
+                            } catch (e: IOException) {
+                                "Can't reach the server. Try again when you're online."
+                            }
+                        }
                     )
                     open != null -> ListScreen(open, onBack = { openId = null }, onDeleteList = { lists.remove(open); openId = null })
                     else -> HomeScreen(

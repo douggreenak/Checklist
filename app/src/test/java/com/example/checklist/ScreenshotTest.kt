@@ -63,3 +63,13 @@ class LoginScreenshots {
     @get:Rule val light = Paparazzi(deviceConfig = DeviceConfig.PIXEL_5)
     @Test fun loginLight() = light.snapshot { ChecklistTheme(false) { LoginScreen("example.com/checklist", false, "Wrong password") { _, _ -> } } }
 }
+
+class FullSettingsScreenshot {
+    @get:Rule val paparazzi = Paparazzi(deviceConfig = DeviceConfig.PIXEL_5.copy(screenHeight = 3000))
+    @Test fun settingsWithPassword() = paparazzi.snapshot {
+        ChecklistTheme(false) {
+            SettingsScreen(Settings(), onBack = {}, account = "https://example.com/checklist/api.php", syncStatus = "Synced",
+                onChangePassword = { _, _ -> null }, passwordFormOpen = true)
+        }
+    }
+}

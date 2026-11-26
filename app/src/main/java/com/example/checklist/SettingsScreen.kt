@@ -9,7 +9,11 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.runtime.*
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -19,7 +23,10 @@ import androidx.compose.ui.unit.sp
 @Composable
 fun SettingsScreen(
     settings: Settings, onBack: () -> Unit,
-    account: String? = null, syncStatus: String = "", onSignOut: () -> Unit = {}
+    account: String? = null, syncStatus: String = "", onSignOut: () -> Unit = {},
+    /** Returns null on success, or an error message. */
+    onChangePassword: (suspend (current: String, new: String) -> String?)? = null,
+    passwordFormOpen: Boolean = false
 ) {
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -71,6 +78,7 @@ fun SettingsScreen(
                 Section("Account")
                 Text(account, fontSize = 18.sp, color = MaterialTheme.colorScheme.onBackground)
                 Text(syncStatus, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                if (onChangePassword != null) PasswordForm(onChangePassword, passwordFormOpen)
                 OutlinedButton(
                     onClick = onSignOut,
                     modifier = Modifier.fillMaxWidth().height(56.dp),
@@ -85,6 +93,55 @@ fun SettingsScreen(
             ) { Text("Reset to defaults", fontSize = 18.sp) }
             Spacer(Modifier.height(24.dp).navigationBarsPadding())
         }
+    }
+}
+
+@Composable
+private fun PasswordForm(onChange: suspend (String, String) -> String?, startOpen: Boolean) {
+    var open by remember { mutableStateOf(startOpen) }
+    var current by remember { mutableStateOf("") }
+    var new by remember { mutableStateOf("") }
+    var confirm by remember { mutableStateOf("") }
+    var message by remember { mutableStateOf<String?>(null) }
+    var ok by remember { mutableStateOf(false) }
+    var busy by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+
+    OutlinedButton(
+        onClick = { open = !open; message = null },
+        modifier = Modifier.fillMaxWidth().height(56.dp), shape = RoundedCornerShape(16.dp)
+    ) { Text("Change password", fontSize = 18.sp) }
+
+    if (open) {
+        @Composable fun field(label: String, value: String, set: (String) -> Unit) = OutlinedTextField(
+            value = value, onValueChange = set, singleLine = true, label = { Text(label) },
+            textStyle = androidx.compose.ui.text.TextStyle(fontSize = 20.sp),
+            visualTransformation = PasswordVisualTransformation(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+            shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth()
+        )
+        field("Current password", current) { current = it }
+        field("New password", new) { new = it }
+        field("Repeat new password", confirm) { confirm = it }
+        if (message != null) Text(message!!, fontSize = 17.sp, color = if (ok) DoneGreen else DeleteRed)
+        Button(
+            onClick = {
+                when {
+                    new.length < 6 -> { ok = false; message = "The new password must be at least 6 characters" }
+                    new != confirm -> { ok = false; message = "The new passwords don't match" }
+                    else -> scope.launch {
+                        busy = true; message = null
+                        val err = onChange(current, new)
+                        busy = false
+                        ok = err == null
+                        message = err ?: "Password changed. Other devices were signed out."
+                        if (ok) { current = ""; new = ""; confirm = "" }
+                    }
+                }
+            },
+            enabled = !busy,
+            modifier = Modifier.fillMaxWidth().height(60.dp), shape = RoundedCornerShape(16.dp)
+        ) { Text(if (busy) "Saving…" else "Save new password", fontSize = 19.sp) }
     }
 }
 

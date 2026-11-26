@@ -30,6 +30,10 @@ class Api(server: String) {
     fun login(password: String): String =
         call("login", null, JSONObject().put("password", password)).getString("token")
 
+    /** Returns a fresh token; the old one stops working. */
+    fun changePassword(token: String, current: String, new: String): String =
+        call("changepw", token, JSONObject().put("current", current).put("new", new)).getString("token")
+
     fun fetch(token: String): Remote {
         val o = call("get", token, null)
         return Remote(if (o.isNull("json")) null else o.getString("json"), o.optLong("updatedAt"))

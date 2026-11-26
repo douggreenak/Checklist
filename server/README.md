@@ -16,10 +16,18 @@ the database password lives only in `config.php` on your web host.
 
 The tables are created automatically on first use.
 
+## Changing the password
+
+Use **Settings → Change password** in the app. The new password is stored (hashed) in the database and
+overrides the hash in `config.php`, and every other signed-in device is signed out. If you ever forget
+the password, delete the `password_hash` row from the `checklist_settings` table and the hash in
+`config.php` applies again.
+
 ## How it works
 
 - `POST api.php?action=login` – checks the password (5 wrong tries per IP locks out for 15 minutes)
   and returns a signed token valid for 90 days.
+- `POST api.php?action=changepw` – needs a token and the current password; sets the new one.
 - `GET api.php?action=get` / `POST api.php?action=save` – read and replace your lists. All of them are
   stored as one JSON document. If two devices change things at once, the most recent save wins.
 

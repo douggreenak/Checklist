@@ -31,6 +31,26 @@ function bearer(): string {
     return stripos($h, 'Bearer ') === 0 ? trim(substr($h, 7)) : '';
 }
 
+function lockedOut(PDO $pdo, string $ip): bool {
+    $pdo->prepare('DELETE FROM checklist_login_failures WHERE at_time < ?')->execute([time() - 900]);
+    $n = $pdo->prepare('SELECT COUNT(*) FROM checklist_login_failures WHERE ip = ?');
+    $n->execute([$ip]);
+    return (int)$n->fetchColumn() >= 5;
+}
+
+function recordFailure(PDO $pdo, string $ip): void {
+    $pdo->prepare('INSERT INTO checklist_login_failures (ip, at_time) VALUES (?, ?)')->execute([$ip, time()]);
+    usleep(400000);
+}
+
+/** A password changed from the app is stored in the database and overrides config.php. */
+function currentHash(PDO $pdo, array $cfg): string {
+    $q = $pdo->prepare('SELECT v FROM checklist_settings WHERE k = ?');
+    $q->execute(['password_hash']);
+    $v = $q->fetchColumn();
+    return $v ? (string)$v : $cfg['password_hash'];
+}
+
 $cfg = require __DIR__ . '/config.php';
 
 $raw = file_get_contents('php://input');
@@ -43,25 +63,43 @@ try {
     $pdo = new PDO($cfg['dsn'], $cfg['db_user'], $cfg['db_pass'], [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
     $pdo->exec('CREATE TABLE IF NOT EXISTS checklist_data (id INT NOT NULL PRIMARY KEY, body LONGTEXT NOT NULL, updated_at BIGINT NOT NULL)');
     $pdo->exec('CREATE TABLE IF NOT EXISTS checklist_login_failures (ip VARCHAR(45) NOT NULL, at_time BIGINT NOT NULL)');
+    $pdo->exec('CREATE TABLE IF NOT EXISTS checklist_settings (k VARCHAR(50) NOT NULL PRIMARY KEY, v TEXT NOT NULL)');
+    $ip = $_SERVER['REMOTE_ADDR'] ?? '';
+    $hash = currentHash($pdo, $cfg);
+    // Tokens are tied to the current password, so changing it signs every other device out.
+    $secret = $cfg['token_secret'] . $hash;
 
     if ($action === 'login' && $_SERVER['REQUEST_METHOD'] === 'POST') {
-        $ip = $_SERVER['REMOTE_ADDR'] ?? '';
-        $pdo->prepare('DELETE FROM checklist_login_failures WHERE at_time < ?')->execute([time() - 900]);
-        $n = $pdo->prepare('SELECT COUNT(*) FROM checklist_login_failures WHERE ip = ?');
-        $n->execute([$ip]);
-        if ((int)$n->fetchColumn() >= 5) respond(429, ['error' => 'Too many attempts. Try again in 15 minutes.']);
-
+        if (lockedOut($pdo, $ip)) respond(429, ['error' => 'Too many attempts. Try again in 15 minutes.']);
         $pw = $in['password'] ?? '';
-        if (!is_string($pw) || !password_verify($pw, $cfg['password_hash'])) {
-            $pdo->prepare('INSERT INTO checklist_login_failures (ip, at_time) VALUES (?, ?)')->execute([$ip, time()]);
-            usleep(400000);
+        if (!is_string($pw) || !password_verify($pw, $hash)) {
+            recordFailure($pdo, $ip);
             respond(401, ['error' => 'Wrong password']);
         }
         $pdo->prepare('DELETE FROM checklist_login_failures WHERE ip = ?')->execute([$ip]);
-        respond(200, ['token' => makeToken($cfg['token_secret'])]);
+        respond(200, ['token' => makeToken($secret)]);
     }
 
-    if (!validToken(bearer(), $cfg['token_secret'])) respond(401, ['error' => 'Not signed in']);
+    if (!validToken(bearer(), $secret)) respond(401, ['error' => 'Not signed in']);
+
+    if ($action === 'changepw' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+        if (lockedOut($pdo, $ip)) respond(429, ['error' => 'Too many attempts. Try again in 15 minutes.']);
+        $cur = $in['current'] ?? '';
+        $new = $in['new'] ?? '';
+        if (!is_string($cur) || !password_verify($cur, $hash)) {
+            recordFailure($pdo, $ip);
+            respond(403, ['error' => 'Current password is wrong']);
+        }
+        if (!is_string($new) || strlen($new) < 6 || strlen($new) > 200) {
+            respond(400, ['error' => 'The new password must be at least 6 characters']);
+        }
+        $newHash = password_hash($new, PASSWORD_DEFAULT);
+        $exists = $pdo->query("SELECT COUNT(*) FROM checklist_settings WHERE k = 'password_hash'")->fetchColumn() > 0;
+        $pdo->prepare($exists
+            ? "UPDATE checklist_settings SET v = ? WHERE k = 'password_hash'"
+            : "INSERT INTO checklist_settings (v, k) VALUES (?, 'password_hash')")->execute([$newHash]);
+        respond(200, ['token' => makeToken($cfg['token_secret'] . $newHash)]);
+    }
 
     if ($action === 'get') {
         $r = $pdo->query('SELECT body, updated_at FROM checklist_data WHERE id = 1')->fetch(PDO::FETCH_ASSOC);
