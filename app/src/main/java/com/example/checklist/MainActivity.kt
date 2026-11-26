@@ -5,6 +5,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -55,9 +56,21 @@ class MainActivity : ComponentActivity() {
                     }.toString()
                 }.collect { prefs.edit().putString("items", it).apply() }
             }
-            MaterialTheme { ChecklistScreen(items) }
+            ChecklistTheme { ChecklistScreen(items) }
         }
     }
+}
+
+@Composable
+fun ChecklistTheme(dark: Boolean = isSystemInDarkTheme(), content: @Composable () -> Unit) {
+    MaterialTheme(
+        colorScheme = if (dark) darkColorScheme(
+            primary = Color(0xFFCFBCFF), onPrimary = Color(0xFF381E72),
+            background = Color(0xFF121212), onBackground = Color(0xFFEAEAEA),
+            error = Color(0xFFFF8A80)
+        ) else lightColorScheme(),
+        content = content
+    )
 }
 
 @Composable
@@ -72,7 +85,7 @@ fun ChecklistScreen(items: SnapshotStateList<Item>) {
     }
 
     Scaffold(
-        containerColor = Color.White,
+        containerColor = MaterialTheme.colorScheme.background,
         bottomBar = {
             Button(
                 onClick = { addAfter(items.lastIndex) },
@@ -114,7 +127,7 @@ fun ItemRow(item: Item, requestFocus: Boolean, onFocused: () -> Unit, onEnter: (
             border = BorderStroke(3.dp, MaterialTheme.colorScheme.primary),
             colors = if (item.checked) ButtonDefaults.outlinedButtonColors(
                 containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = Color.White
+                contentColor = MaterialTheme.colorScheme.onPrimary
             ) else ButtonDefaults.outlinedButtonColors()
         ) { Text(if (item.checked) "✓" else "", fontSize = 36.sp) }
 
@@ -125,7 +138,7 @@ fun ItemRow(item: Item, requestFocus: Boolean, onFocused: () -> Unit, onEnter: (
             textStyle = TextStyle(
                 fontSize = 22.sp,
                 textDecoration = if (item.checked) TextDecoration.LineThrough else null,
-                color = if (item.checked) Color.Gray else Color.Black
+                color = if (item.checked) MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f) else MaterialTheme.colorScheme.onBackground
             ),
             placeholder = { Text("Type item…", fontSize = 22.sp) },
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
@@ -136,7 +149,7 @@ fun ItemRow(item: Item, requestFocus: Boolean, onFocused: () -> Unit, onEnter: (
             onClick = onDelete,
             modifier = Modifier.size(64.dp),
             contentPadding = PaddingValues(0.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F))
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F), contentColor = Color.White)
         ) { Text("✕", fontSize = 28.sp) }
     }
 }
