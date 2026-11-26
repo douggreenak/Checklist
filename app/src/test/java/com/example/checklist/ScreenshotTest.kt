@@ -80,3 +80,9 @@ class UpdateBannerScreenshot {
         ChecklistTheme(false) { HomeScreen(sampleLists(), "Thursday, November 26", {}, {}, {}, update = UpdateInfo("1.3.0", "", "")) }
     }
 }
+
+class EmptyScreenshots {
+    @get:Rule val paparazzi = Paparazzi(deviceConfig = DeviceConfig.PIXEL_5)
+    @Test fun emptyList() = paparazzi.snapshot { ChecklistTheme(false) { ListScreen(TaskList("Ideas", color = Palette[4]), {}, {}) } }
+    @Test fun noLists() = paparazzi.snapshot { ChecklistTheme(false) { HomeScreen(emptyList<TaskList>(), "Thursday, November 26", onOpen = {}, onAdd = {}, onDelete = {}) } }
+}

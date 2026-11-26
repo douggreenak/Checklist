@@ -119,7 +119,9 @@ svg { width:24px; height:24px; fill:currentColor; flex:none; }
 .list-card .progress { margin-top:18px; }
 
 .empty { text-align:center; padding:56px 20px; color:var(--on-surface-variant); }
-.empty .big { font-size:4rem; line-height:1; margin-bottom:12px; }
+.empty .big { width:104px; height:104px; margin:0 auto 20px; border-radius:36px; background:var(--primary-container); color:var(--on-primary-container); display:grid; place-items:center; transition:border-radius .5s var(--spring); }
+.empty .big:hover { border-radius:52px; }
+.empty .big svg { width:56px; height:56px; }
 .empty h3 { margin:0 0 6px; font-size:1.5rem; color:var(--on-surface); font-weight:750; }
 .empty p { margin:0; font-size:1.1rem; }
 

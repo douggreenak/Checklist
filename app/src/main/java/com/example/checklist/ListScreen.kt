@@ -12,13 +12,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -59,7 +57,7 @@ fun ListScreen(list: TaskList, onBack: () -> Unit, onDeleteList: () -> Unit) {
                 colors = ButtonDefaults.buttonColors(containerColor = accent.color, contentColor = accent.on),
                 modifier = Modifier.fillMaxWidth().navigationBarsPadding().imePadding().padding(16.dp).height(68.dp)
             ) {
-                Icon(Icons.Default.Add, null, modifier = Modifier.size(30.dp))
+                Icon(painterResource(R.drawable.ic_add), null, modifier = Modifier.size(30.dp))
                 Spacer(Modifier.width(8.dp))
                 Text("Add task", fontSize = 22.sp, fontWeight = FontWeight.SemiBold)
             }
@@ -72,8 +70,8 @@ fun ListScreen(list: TaskList, onBack: () -> Unit, onDeleteList: () -> Unit) {
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             if (active.isEmpty()) item {
-                if (completed.isEmpty()) EmptyState("📝", "No tasks yet", "Tap “Add task”, type, and press Enter for the next one.")
-                else EmptyState("🎉", "All done!", "Nothing left to do on this list.")
+                if (completed.isEmpty()) EmptyState(R.drawable.ic_edit_note, "No tasks yet", "Tap “Add task”, type, and press Enter for the next one.")
+                else EmptyState(R.drawable.ic_task_alt, "All done!", "Nothing left to do on this list.")
             }
             items(active, key = { it.id }) { item ->
                 TaskRow(item, list, accent, focusId == item.id, { focusId = null }, { addAfter(item) }, Modifier.animateItem())
@@ -87,7 +85,7 @@ fun ListScreen(list: TaskList, onBack: () -> Unit, onDeleteList: () -> Unit) {
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
-                            if (list.showCompleted) Icons.Default.KeyboardArrowDown else Icons.Default.KeyboardArrowRight,
+                            painterResource(if (list.showCompleted) R.drawable.ic_keyboard_arrow_down else R.drawable.ic_chevron_right),
                             null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(30.dp)
                         )
                         Spacer(Modifier.width(8.dp))
@@ -112,29 +110,29 @@ private fun ListTopBar(list: TaskList, accent: Accent, onBack: () -> Unit, onDel
     Column(Modifier.fillMaxWidth().statusBarsPadding().padding(start = 8.dp, end = 8.dp, top = 8.dp, bottom = 8.dp)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onBack, modifier = Modifier.size(56.dp)) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = accent.color, modifier = Modifier.size(30.dp))
+                Icon(painterResource(R.drawable.ic_arrow_back), "Back", tint = accent.color, modifier = Modifier.size(30.dp))
             }
             Spacer(Modifier.weight(1f))
             Box {
                 IconButton(onClick = { menu = true }, modifier = Modifier.size(56.dp)) {
-                    Icon(Icons.Default.MoreVert, "Menu", tint = accent.color, modifier = Modifier.size(30.dp))
+                    Icon(painterResource(R.drawable.ic_more_vert), "Menu", tint = accent.color, modifier = Modifier.size(30.dp))
                 }
                 DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
                     DropdownMenuItem(
                         text = { Text(if (list.showCompleted) "Hide completed" else "Show completed", fontSize = 19.sp) },
-                        leadingIcon = { Icon(Icons.Default.Check, null) },
+                        leadingIcon = { Icon(painterResource(if (list.showCompleted) R.drawable.ic_visibility_off else R.drawable.ic_visibility), null) },
                         onClick = { list.showCompleted = !list.showCompleted; menu = false },
                         modifier = Modifier.heightIn(min = 56.dp)
                     )
                     DropdownMenuItem(
                         text = { Text("Change color", fontSize = 19.sp) },
-                        leadingIcon = { Box(Modifier.size(22.dp).clip(CircleShape).background(accent.color)) },
+                        leadingIcon = { Icon(painterResource(R.drawable.ic_palette), null, tint = accent.color) },
                         onClick = { menu = false; onChangeColor() },
                         modifier = Modifier.heightIn(min = 56.dp)
                     )
                     DropdownMenuItem(
                         text = { Text("Delete list", fontSize = 19.sp, color = DeleteRed) },
-                        leadingIcon = { Icon(Icons.Default.Delete, null, tint = DeleteRed) },
+                        leadingIcon = { Icon(painterResource(R.drawable.ic_delete), null, tint = DeleteRed) },
                         onClick = { menu = false; onDeleteList() },
                         modifier = Modifier.heightIn(min = 56.dp)
                     )
@@ -170,7 +168,7 @@ private fun TaskRow(
 ) {
     SwipeRow(
         rightLabel = if (item.checked) "Not done" else "Done",
-        rightIcon = if (item.checked) UndoIcon else Icons.Default.Check,
+        rightIcon = if (item.checked) R.drawable.ic_undo else R.drawable.ic_check,
         onSwipeRight = { item.checked = !item.checked },
         onSwipeLeft = { list.items.remove(item) },
         modifier = modifier
@@ -189,7 +187,7 @@ private fun TaskRow(
                 IconButton(
                     onClick = { list.items.remove(item) },
                     modifier = Modifier.size(56.dp).clip(CircleShape).background(DeleteRed.copy(alpha = 0.12f))
-                ) { Icon(Icons.Default.Close, "Delete task", tint = DeleteRed, modifier = Modifier.size(28.dp)) }
+                ) { Icon(painterResource(R.drawable.ic_close), "Delete task", tint = DeleteRed, modifier = Modifier.size(28.dp)) }
             }
         }
     }
@@ -207,7 +205,7 @@ private fun CheckCircle(checked: Boolean, accent: Accent, onClick: () -> Unit) {
                 .border(2.5.dp, accent.color, CircleShape),
             contentAlignment = Alignment.Center
         ) {
-            if (checked) Icon(Icons.Default.Check, "Done", tint = accent.on, modifier = Modifier.size(26.dp))
+            if (checked) Icon(painterResource(R.drawable.ic_check), "Done", tint = accent.on, modifier = Modifier.size(26.dp))
         }
     }
 }

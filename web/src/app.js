@@ -1,22 +1,11 @@
+import { ICONS } from './icons.js';
 import { SchemeVibrant, SchemeTonalSpot, Hct, MaterialDynamicColors as D } from '@material/material-color-utilities';
 
 /* ================= constants ================= */
 const PALETTE = [0xFF6C4DD6, 0xFF1E7BE0, 0xFF00897B, 0xFF3FA34D, 0xFFE8710A, 0xFFD81B60,
   0xFFE53935, 0xFF8E24AA, 0xFF00ACC1, 0xFF7CB342, 0xFFFDD835, 0xFF546E7A].map(n => n | 0);
 
-const ICONS = {
-  check: 'M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z',
-  close: 'M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z',
-  add: 'M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6z',
-  back: 'M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z',
-  more: 'M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z',
-  settings: 'M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z',
-  expand: 'M16.59 8.59 12 13.17 7.41 8.59 6 10l6 6 6-6z',
-  trash: 'M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z',
-  undo: 'M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z',
-  lock: 'M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z',
-  palette: 'M12 2C6.49 2 2 6.49 2 12s4.49 10 10 10c1.38 0 2.5-1.12 2.5-2.5 0-.61-.23-1.2-.64-1.67-.08-.1-.13-.21-.13-.33 0-.28.22-.5.5-.5H16c3.31 0 6-2.69 6-6 0-4.96-4.49-9-10-9zm-5.5 9c-.83 0-1.5-.67-1.5-1.5S5.67 8 6.5 8 8 8.67 8 9.5 7.33 11 6.5 11zm3-4C8.67 7 8 6.33 8 5.5S8.67 4 9.5 4s1.5.67 1.5 1.5S10.33 7 9.5 7zm5 0c-.83 0-1.5-.67-1.5-1.5S13.67 4 14.5 4s1.5.67 1.5 1.5S15.33 7 14.5 7zm3 4c-.83 0-1.5-.67-1.5-1.5S16.67 8 17.5 8s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z',
-};
+const ALIAS = { back: 'arrow_back', more: 'more_vert', expand: 'keyboard_arrow_down', trash: 'delete' };
 
 /* ================= tiny DOM helper (text is always set as text, never as HTML) ================= */
 function h(tag, props = {}, ...kids) {
@@ -34,10 +23,10 @@ function h(tag, props = {}, ...kids) {
 }
 function icon(name) {
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('viewBox', '0 -960 960 960');
   svg.setAttribute('aria-hidden', 'true');
   const p = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-  p.setAttribute('d', ICONS[name]);
+  p.setAttribute('d', ICONS[ALIAS[name] || name]);
   svg.append(p);
   return svg;
 }
@@ -333,7 +322,7 @@ function listsPanel(r) {
       h('div', { class: 'panel-head' }, h('div', {}, h('h1', { class: 'display', text: 'My Lists' }), h('p', { class: 'label', text: `${today()} · ${todo} to do` }))),
       state.lists.length
         ? h('div', { class: 'stack' }, state.lists.map(l => listCard(l, r.list === l)))
-        : h('div', { class: 'empty' }, h('div', { class: 'big', text: '📋' }), h('h3', { text: 'No lists yet' }), h('p', { text: 'Tap “New list” to make your first one.' }))),
+        : h('div', { class: 'empty' }, h('div', { class: 'big' }, icon('checklist')), h('h3', { text: 'No lists yet' }), h('p', { text: 'Tap “New list” to make your first one.' }))),
     h('div', { class: 'fab-wrap' }, h('button', { class: 'fab', type: 'button', onclick: newList }, icon('add'), 'New list')));
 }
 
@@ -378,8 +367,8 @@ function openMenu(btn, l) {
   const outside = e => { if (!menu.contains(e.target) && !btn.contains(e.target)) close(); };
   const item = (ic, text, fn, cls) => h('button', { type: 'button', class: cls || '', onclick: () => { close(); fn(); } }, ic, text);
   const menu = h('div', { class: 'menu', role: 'menu' },
-    item(icon('check'), l.showCompleted ? 'Hide completed' : 'Show completed', () => { l.showCompleted = !l.showCompleted; changed(); }),
-    item(h('span', { class: 'dot' }), 'Change color', () => colorDialog(l)),
+    item(icon(l.showCompleted ? 'visibility_off' : 'visibility'), l.showCompleted ? 'Hide completed' : 'Show completed', () => { l.showCompleted = !l.showCompleted; changed(); }),
+    item(icon('palette'), 'Change color', () => colorDialog(l)),
     item(icon('trash'), 'Delete list', () => { state.lists = state.lists.filter(x => x !== l); go(''); changed(); }, 'danger'));
   btn.parentElement.append(menu);
   document.addEventListener('pointerdown', outside, true);
@@ -402,8 +391,8 @@ function listView(l) {
     l.items.length ? h('div', { class: 'mt14' }, progressBar(l)) : null,
     h('div', { class: 'tasks' },
       !active.length ? (completed.length
-        ? h('div', { class: 'empty' }, h('div', { class: 'big', text: '🎉' }), h('h3', { text: 'All done!' }), h('p', { text: 'Nothing left to do on this list.' }))
-        : h('div', { class: 'empty' }, h('div', { class: 'big', text: '📝' }), h('h3', { text: 'No tasks yet' }), h('p', { text: 'Tap “Add task”, type, and press Enter for the next one.' }))) : null,
+        ? h('div', { class: 'empty' }, h('div', { class: 'big' }, icon('task_alt')), h('h3', { text: 'All done!' }), h('p', { text: 'Nothing left to do on this list.' }))
+        : h('div', { class: 'empty' }, h('div', { class: 'big' }, icon('edit_note')), h('h3', { text: 'No tasks yet' }), h('p', { text: 'Tap “Add task”, type, and press Enter for the next one.' }))) : null,
       active.map(i => taskRow(l, i)),
       completed.length ? h('button', { class: 'completed-head', type: 'button', 'aria-expanded': String(l.showCompleted), onclick: () => { l.showCompleted = !l.showCompleted; changed(); } },
         icon('expand'), 'Completed', h('span', { class: 'badge', text: String(completed.length) })) : null,
@@ -523,7 +512,7 @@ function shell() {
   const main = h('main', { class: 'main-pane' },
     r.name === 'list' ? listView(r.list)
       : r.name === 'settings' ? settingsView()
-        : h('div', { class: 'pane-inner' }, h('div', { class: 'empty' }, h('div', { class: 'big', text: '✅' }), h('h3', { text: 'Pick a list' }), h('p', { text: 'Choose one on the left, or make a new one.' }))));
+        : h('div', { class: 'pane-inner' }, h('div', { class: 'empty' }, h('div', { class: 'big' }, icon('checklist')), h('h3', { text: 'Pick a list' }), h('p', { text: 'Choose one on the left, or make a new one.' }))));
   return h('div', { class: 'shell view-' + r.name }, listsPanel(r), main);
 }
 

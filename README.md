@@ -48,3 +48,10 @@ scheme generated from each list's color.
 ```
 
 Screenshots are rendered on the JVM with [Paparazzi](https://github.com/cashapp/paparazzi), so no emulator is needed. CI (GitHub Actions) runs the unit tests, builds the APK, and runs the UI tests on an emulator.
+
+## Credits
+
+Icons are [Material Symbols](https://fonts.google.com/icons) (Rounded) by Google, licensed under the
+[Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0). The web version uses the
+[Roboto Flex](https://fonts.google.com/specimen/Roboto+Flex) font (SIL Open Font License) and Google's
+[material-color-utilities](https://github.com/material-foundation/material-color-utilities) (Apache 2.0).

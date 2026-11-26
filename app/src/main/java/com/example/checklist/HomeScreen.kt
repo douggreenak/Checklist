@@ -7,15 +7,11 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -43,7 +39,7 @@ fun HomeScreen(
                     Text("$subtitle · $todo to do", fontSize = 17.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 IconButton(onClick = onSettings, modifier = Modifier.size(60.dp)) {
-                    Icon(Icons.Default.Settings, "Settings", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(32.dp))
+                    Icon(painterResource(R.drawable.ic_settings), "Settings", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(32.dp))
                 }
             }
         },
@@ -53,7 +49,7 @@ fun HomeScreen(
                 shape = RoundedCornerShape(24.dp),
                 modifier = Modifier.fillMaxWidth().navigationBarsPadding().padding(16.dp).height(68.dp)
             ) {
-                Icon(Icons.Default.Add, null, modifier = Modifier.size(30.dp))
+                Icon(painterResource(R.drawable.ic_add), null, modifier = Modifier.size(30.dp))
                 Spacer(Modifier.width(8.dp))
                 Text("New list", fontSize = 22.sp, fontWeight = FontWeight.SemiBold)
             }
@@ -70,17 +66,19 @@ fun HomeScreen(
                     shape = RoundedCornerShape(20.dp), modifier = Modifier.fillMaxWidth()
                 ) {
                     Row(Modifier.padding(start = 20.dp, top = 6.dp, bottom = 6.dp, end = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Icon(painterResource(R.drawable.ic_download), null, modifier = Modifier.size(30.dp))
+                        Spacer(Modifier.width(14.dp))
                         Column(Modifier.weight(1f).padding(vertical = 8.dp)) {
                             Text("Update available", fontSize = 20.sp, fontWeight = FontWeight.Bold)
                             Text("Version ${update.version} · tap to download", fontSize = 16.sp)
                         }
                         IconButton(onClick = onDismissUpdate, modifier = Modifier.size(52.dp)) {
-                            Icon(Icons.Default.Close, "Dismiss", modifier = Modifier.size(26.dp))
+                            Icon(painterResource(R.drawable.ic_close), "Dismiss", modifier = Modifier.size(26.dp))
                         }
                     }
                 }
             }
-            if (lists.isEmpty()) item { EmptyState("📋", "No lists yet", "Tap “New list” to make your first one.") }
+            if (lists.isEmpty()) item { EmptyState(R.drawable.ic_checklist, "No lists yet", "Tap “New list” to make your first one.") }
             items(lists, key = { it.id }) { list ->
                 SwipeRow(rightLabel = null, onSwipeRight = {}, onSwipeLeft = { onDelete(list) }, modifier = Modifier.animateItem()) {
                     ListCard(list) { onOpen(list) }
@@ -119,7 +117,7 @@ private fun ListCard(list: TaskList, onClick: () -> Unit) {
                     )
                 }
                 if (list.remaining > 0) Text("${list.remaining}", fontSize = 32.sp, fontWeight = FontWeight.Bold, color = accent.color)
-                else if (list.items.isNotEmpty()) Icon(Icons.Default.Check, "All done", tint = accent.color, modifier = Modifier.size(32.dp))
+                else if (list.items.isNotEmpty()) Icon(painterResource(R.drawable.ic_check), "All done", tint = accent.color, modifier = Modifier.size(32.dp))
             }
             if (list.items.isNotEmpty()) {
                 Spacer(Modifier.height(14.dp))
@@ -135,14 +133,19 @@ private fun ListCard(list: TaskList, onClick: () -> Unit) {
 }
 
 @Composable
-fun EmptyState(emoji: String, title: String, hint: String) {
+fun EmptyState(@androidx.annotation.DrawableRes icon: Int, title: String, hint: String) {
     Column(
         Modifier.fillMaxWidth().padding(vertical = 56.dp, horizontal = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(emoji, fontSize = 56.sp)
+        Box(
+            Modifier.size(96.dp).clip(RoundedCornerShape(32.dp)).background(MaterialTheme.colorScheme.primaryContainer),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(painterResource(icon), null, tint = MaterialTheme.colorScheme.onPrimaryContainer, modifier = Modifier.size(52.dp))
+        }
         Spacer(Modifier.height(12.dp))
         Text(title, fontSize = 22.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onBackground)
-        Text(hint, fontSize = 17.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(hint, fontSize = 17.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
     }
 }
