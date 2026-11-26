@@ -264,7 +264,7 @@ function swipeable(card, { right, left, rightLabel, rightIcon }) {
       h('div', { class: 'l' }, icon(rightIcon || 'check'), rightLabel || ''),
       h('div', { class: 'r' }, 'Delete', icon('trash'))),
     card);
-  card.classList.add('card');
+  card.classList.add('swipe-card');
   let sx = 0, sy = 0, dx = 0, active = false, tracking = false, pid = null;
   const reset = () => { wrap.classList.add('snap'); card.style.transform = ''; wrap.classList.remove('dir-left', 'dir-right'); };
   card.addEventListener('pointerdown', e => {

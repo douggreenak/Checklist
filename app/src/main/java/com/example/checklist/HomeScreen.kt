@@ -38,7 +38,7 @@ fun HomeScreen(
                     Text("My Lists", fontSize = 36.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
                     Text("$subtitle · $todo to do", fontSize = 17.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                IconButton(onClick = onSettings, modifier = Modifier.size(60.dp)) {
+                IconButton(onClick = onSettings, modifier = Modifier.size(68.dp)) {
                     Icon(painterResource(R.drawable.ic_settings), "Settings", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(32.dp))
                 }
             }
@@ -47,7 +47,7 @@ fun HomeScreen(
             Button(
                 onClick = onAdd,
                 shape = RoundedCornerShape(24.dp),
-                modifier = Modifier.fillMaxWidth().navigationBarsPadding().padding(16.dp).height(68.dp)
+                modifier = Modifier.fillMaxWidth().navigationBarsPadding().padding(16.dp).height(76.dp)
             ) {
                 Icon(painterResource(R.drawable.ic_add), null, modifier = Modifier.size(30.dp))
                 Spacer(Modifier.width(8.dp))
@@ -72,7 +72,7 @@ fun HomeScreen(
                             Text("Update available", fontSize = 20.sp, fontWeight = FontWeight.Bold)
                             Text("Version ${update.version} · tap to download", fontSize = 16.sp)
                         }
-                        IconButton(onClick = onDismissUpdate, modifier = Modifier.size(52.dp)) {
+                        IconButton(onClick = onDismissUpdate, modifier = Modifier.size(64.dp)) {
                             Icon(painterResource(R.drawable.ic_close), "Dismiss", modifier = Modifier.size(26.dp))
                         }
                     }

@@ -55,7 +55,7 @@ fun ListScreen(list: TaskList, onBack: () -> Unit, onDeleteList: () -> Unit) {
                 onClick = { addAfter(active.lastOrNull()) },
                 shape = RoundedCornerShape(24.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = accent.color, contentColor = accent.on),
-                modifier = Modifier.fillMaxWidth().navigationBarsPadding().imePadding().padding(16.dp).height(68.dp)
+                modifier = Modifier.fillMaxWidth().navigationBarsPadding().imePadding().padding(16.dp).height(76.dp)
             ) {
                 Icon(painterResource(R.drawable.ic_add), null, modifier = Modifier.size(30.dp))
                 Spacer(Modifier.width(8.dp))
@@ -81,7 +81,7 @@ fun ListScreen(list: TaskList, onBack: () -> Unit, onDeleteList: () -> Unit) {
                     Row(
                         Modifier.fillMaxWidth().animateItem().clip(RoundedCornerShape(16.dp))
                             .clickable { list.showCompleted = !list.showCompleted }
-                            .heightIn(min = 60.dp).padding(horizontal = 12.dp),
+                            .heightIn(min = 72.dp).padding(horizontal = 12.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
@@ -109,12 +109,12 @@ private fun ListTopBar(list: TaskList, accent: Accent, onBack: () -> Unit, onDel
     var menu by remember { mutableStateOf(false) }
     Column(Modifier.fillMaxWidth().statusBarsPadding().padding(start = 8.dp, end = 8.dp, top = 8.dp, bottom = 8.dp)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onBack, modifier = Modifier.size(56.dp)) {
+            IconButton(onClick = onBack, modifier = Modifier.size(64.dp)) {
                 Icon(painterResource(R.drawable.ic_arrow_back), "Back", tint = accent.color, modifier = Modifier.size(30.dp))
             }
             Spacer(Modifier.weight(1f))
             Box {
-                IconButton(onClick = { menu = true }, modifier = Modifier.size(56.dp)) {
+                IconButton(onClick = { menu = true }, modifier = Modifier.size(64.dp)) {
                     Icon(painterResource(R.drawable.ic_more_vert), "Menu", tint = accent.color, modifier = Modifier.size(30.dp))
                 }
                 DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
@@ -122,19 +122,19 @@ private fun ListTopBar(list: TaskList, accent: Accent, onBack: () -> Unit, onDel
                         text = { Text(if (list.showCompleted) "Hide completed" else "Show completed", fontSize = 19.sp) },
                         leadingIcon = { Icon(painterResource(if (list.showCompleted) R.drawable.ic_visibility_off else R.drawable.ic_visibility), null) },
                         onClick = { list.showCompleted = !list.showCompleted; menu = false },
-                        modifier = Modifier.heightIn(min = 56.dp)
+                        modifier = Modifier.heightIn(min = 64.dp)
                     )
                     DropdownMenuItem(
                         text = { Text("Change color", fontSize = 19.sp) },
                         leadingIcon = { Icon(painterResource(R.drawable.ic_palette), null, tint = accent.color) },
                         onClick = { menu = false; onChangeColor() },
-                        modifier = Modifier.heightIn(min = 56.dp)
+                        modifier = Modifier.heightIn(min = 64.dp)
                     )
                     DropdownMenuItem(
                         text = { Text("Delete list", fontSize = 19.sp, color = DeleteRed) },
                         leadingIcon = { Icon(painterResource(R.drawable.ic_delete), null, tint = DeleteRed) },
                         onClick = { menu = false; onDeleteList() },
-                        modifier = Modifier.heightIn(min = 56.dp)
+                        modifier = Modifier.heightIn(min = 64.dp)
                     )
                 }
             }
@@ -179,15 +179,15 @@ private fun TaskRow(
             border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
         ) {
             Row(
-                Modifier.fillMaxWidth().heightIn(min = 72.dp).padding(start = 8.dp, end = 8.dp),
+                Modifier.fillMaxWidth().heightIn(min = 92.dp).height(IntrinsicSize.Min).padding(start = 4.dp, end = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 CheckCircle(item.checked, accent) { item.checked = !item.checked }
                 TaskField(item, requestFocus, onFocused, onEnter, Modifier.weight(1f).padding(horizontal = 6.dp, vertical = 10.dp))
                 IconButton(
                     onClick = { list.items.remove(item) },
-                    modifier = Modifier.size(56.dp).clip(CircleShape).background(DeleteRed.copy(alpha = 0.12f))
-                ) { Icon(painterResource(R.drawable.ic_close), "Delete task", tint = DeleteRed, modifier = Modifier.size(28.dp)) }
+                    modifier = Modifier.size(68.dp).clip(CircleShape).background(DeleteRed.copy(alpha = 0.12f))
+                ) { Icon(painterResource(R.drawable.ic_close), "Delete task", tint = DeleteRed, modifier = Modifier.size(32.dp)) }
             }
         }
     }
@@ -196,16 +196,16 @@ private fun TaskRow(
 @Composable
 private fun CheckCircle(checked: Boolean, accent: Accent, onClick: () -> Unit) {
     Box(
-        Modifier.size(60.dp).clip(CircleShape).clickable(role = Role.Checkbox, onClick = onClick),
+        Modifier.width(88.dp).fillMaxHeight().clip(RoundedCornerShape(28.dp)).clickable(role = Role.Checkbox, onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
         Box(
-            Modifier.size(38.dp).clip(CircleShape)
+            Modifier.size(46.dp).clip(CircleShape)
                 .background(if (checked) accent.color else Color.Transparent)
-                .border(2.5.dp, accent.color, CircleShape),
+                .border(3.dp, accent.color, CircleShape),
             contentAlignment = Alignment.Center
         ) {
-            if (checked) Icon(painterResource(R.drawable.ic_check), "Done", tint = accent.on, modifier = Modifier.size(26.dp))
+            if (checked) Icon(painterResource(R.drawable.ic_check), "Done", tint = accent.on, modifier = Modifier.size(32.dp))
         }
     }
 }

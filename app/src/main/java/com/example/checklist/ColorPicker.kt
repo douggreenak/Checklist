@@ -29,7 +29,7 @@ fun ColorPicker(selected: Int, onSelect: (Int) -> Unit, modifier: Modifier = Mod
                 row.forEach { argb ->
                     val c = Color(argb)
                     Box(
-                        Modifier.size(56.dp).clip(CircleShape).background(c)
+                        Modifier.size(64.dp).clip(CircleShape).background(c)
                             .border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape)
                             .clickable(role = Role.RadioButton, onClickLabel = "Choose color") { onSelect(argb) },
                         contentAlignment = Alignment.Center
@@ -46,7 +46,7 @@ fun ColorPicker(selected: Int, onSelect: (Int) -> Unit, modifier: Modifier = Mod
         Spacer(Modifier.height(4.dp))
         Text("Custom color", fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant)
         val hsv = FloatArray(3).also { android.graphics.Color.colorToHSV(selected, it) }
-        Box(Modifier.fillMaxWidth().height(56.dp), contentAlignment = Alignment.Center) {
+        Box(Modifier.fillMaxWidth().height(64.dp), contentAlignment = Alignment.Center) {
             Box(
                 Modifier.fillMaxWidth().height(18.dp).clip(RoundedCornerShape(9.dp)).background(
                     Brush.horizontalGradient((0..360 step 30).map {
@@ -71,9 +71,9 @@ fun ColorPickerDialog(title: String, selected: Int, onSelect: (Int) -> Unit, onD
     AlertDialog(
         onDismissRequest = onDone,
         title = { Text(title, fontWeight = FontWeight.Bold) },
-        text = { ColorPicker(selected, onSelect) },
+        text = { ColorPicker(selected, onSelect, columns = 3) },
         confirmButton = {
-            Button(onClick = onDone, modifier = Modifier.height(52.dp)) { Text("Done", fontSize = 18.sp) }
+            Button(onClick = onDone, modifier = Modifier.height(60.dp)) { Text("Done", fontSize = 18.sp) }
         }
     )
 }

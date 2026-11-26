@@ -35,7 +35,7 @@ fun SettingsScreen(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             Row(Modifier.statusBarsPadding().padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = onBack, modifier = Modifier.size(56.dp)) {
+                IconButton(onClick = onBack, modifier = Modifier.size(64.dp)) {
                     Icon(painterResource(R.drawable.ic_arrow_back), "Back", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(30.dp))
                 }
                 Text("Settings", fontSize = 32.sp, fontWeight = FontWeight.Bold,
@@ -50,7 +50,7 @@ fun SettingsScreen(
             Section("Appearance")
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 listOf("System", "Light", "Dark").forEachIndexed { i, label ->
-                    val modifier = Modifier.weight(1f).height(56.dp)
+                    val modifier = Modifier.weight(1f).height(68.dp)
                     if (settings.mode == i) Button({ settings.mode = i }, modifier, shape = RoundedCornerShape(16.dp)) {
                         Text(label, fontSize = 18.sp)
                     } else OutlinedButton({ settings.mode = i }, modifier, shape = RoundedCornerShape(16.dp),
@@ -67,7 +67,7 @@ fun SettingsScreen(
 
             Section("Dark mode")
             Row(
-                Modifier.fillMaxWidth().heightIn(min = 64.dp).clickable { settings.pureBlack = !settings.pureBlack },
+                Modifier.fillMaxWidth().heightIn(min = 76.dp).clickable { settings.pureBlack = !settings.pureBlack },
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(Modifier.weight(1f)) {
@@ -84,7 +84,7 @@ fun SettingsScreen(
                 if (onChangePassword != null) PasswordForm(onChangePassword, passwordFormOpen)
                 OutlinedButton(
                     onClick = onSignOut,
-                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                    modifier = Modifier.fillMaxWidth().height(64.dp),
                     shape = RoundedCornerShape(16.dp)
                 ) { Text("Sign out", fontSize = 18.sp, color = DeleteRed) }
             }
@@ -93,7 +93,7 @@ fun SettingsScreen(
 
             OutlinedButton(
                 onClick = { settings.reset() },
-                modifier = Modifier.fillMaxWidth().height(56.dp).padding(top = 0.dp),
+                modifier = Modifier.fillMaxWidth().height(64.dp),
                 shape = RoundedCornerShape(16.dp)
             ) { Text("Reset to defaults", fontSize = 18.sp) }
             Spacer(Modifier.height(24.dp).navigationBarsPadding())
@@ -115,7 +115,7 @@ private fun UpdateSection(version: String, check: suspend () -> UpdateInfo?) {
     val update = found
     if (update != null) Button(
         onClick = { uri.openUri(update.url) },
-        modifier = Modifier.fillMaxWidth().height(60.dp), shape = RoundedCornerShape(16.dp)
+        modifier = Modifier.fillMaxWidth().height(68.dp), shape = RoundedCornerShape(16.dp)
     ) { Text("Download ${update.version}", fontSize = 19.sp) }
     OutlinedButton(
         onClick = {
@@ -132,7 +132,7 @@ private fun UpdateSection(version: String, check: suspend () -> UpdateInfo?) {
             }
         },
         enabled = !checking,
-        modifier = Modifier.fillMaxWidth().height(56.dp), shape = RoundedCornerShape(16.dp)
+        modifier = Modifier.fillMaxWidth().height(64.dp), shape = RoundedCornerShape(16.dp)
     ) { Text(if (checking) "Checking…" else "Check for updates", fontSize = 18.sp) }
 }
 
@@ -149,7 +149,7 @@ private fun PasswordForm(onChange: suspend (String, String) -> String?, startOpe
 
     OutlinedButton(
         onClick = { open = !open; message = null },
-        modifier = Modifier.fillMaxWidth().height(56.dp), shape = RoundedCornerShape(16.dp)
+        modifier = Modifier.fillMaxWidth().height(64.dp), shape = RoundedCornerShape(16.dp)
     ) { Text("Change password", fontSize = 18.sp) }
 
     if (open) {
@@ -180,7 +180,7 @@ private fun PasswordForm(onChange: suspend (String, String) -> String?, startOpe
                 }
             },
             enabled = !busy,
-            modifier = Modifier.fillMaxWidth().height(60.dp), shape = RoundedCornerShape(16.dp)
+            modifier = Modifier.fillMaxWidth().height(68.dp), shape = RoundedCornerShape(16.dp)
         ) { Text(if (busy) "Saving…" else "Save new password", fontSize = 19.sp) }
     }
 }
