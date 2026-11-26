@@ -10,6 +10,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -24,7 +25,10 @@ import androidx.compose.ui.unit.sp
 fun HomeScreen(
     lists: List<TaskList>, subtitle: String,
     onOpen: (TaskList) -> Unit, onAdd: () -> Unit, onDelete: (TaskList) -> Unit,
-    onSettings: () -> Unit = {}
+    onSettings: () -> Unit = {},
+    update: UpdateInfo? = null,
+    onUpdate: () -> Unit = {},
+    onDismissUpdate: () -> Unit = {}
 ) {
     val todo = lists.sumOf { it.remaining }
     Scaffold(
@@ -60,6 +64,22 @@ fun HomeScreen(
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            if (update != null) item(key = "update") {
+                Surface(
+                    onClick = onUpdate, color = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary,
+                    shape = RoundedCornerShape(20.dp), modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(Modifier.padding(start = 20.dp, top = 6.dp, bottom = 6.dp, end = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f).padding(vertical = 8.dp)) {
+                            Text("Update available", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                            Text("Version ${update.version} · tap to download", fontSize = 16.sp)
+                        }
+                        IconButton(onClick = onDismissUpdate, modifier = Modifier.size(52.dp)) {
+                            Icon(Icons.Default.Close, "Dismiss", modifier = Modifier.size(26.dp))
+                        }
+                    }
+                }
+            }
             if (lists.isEmpty()) item { EmptyState("📋", "No lists yet", "Tap “New list” to make your first one.") }
             items(lists, key = { it.id }) { list ->
                 SwipeRow(rightLabel = null, onSwipeRight = {}, onSwipeLeft = { onDelete(list) }, modifier = Modifier.animateItem()) {

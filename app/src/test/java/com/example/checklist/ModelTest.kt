@@ -45,3 +45,19 @@ class ServerUrlTest {
         assertThrows(IllegalArgumentException::class.java) { normalizeServerUrl("  ") }
     }
 }
+
+class UpdatesTest {
+    @org.junit.Test fun newerVersionDetected() {
+        assertTrue(Updates.isNewer("v1.2.0", "1.1.0"))
+        assertTrue(Updates.isNewer("1.10.0", "1.9.9"))
+        assertTrue(Updates.isNewer("2.0", "1.9.9"))
+        assertTrue(Updates.isNewer("v1.1.1", "1.1.0"))
+    }
+
+    @org.junit.Test fun sameOrOlderIsNotAnUpdate() {
+        assertFalse(Updates.isNewer("v1.1.0", "1.1.0"))
+        assertFalse(Updates.isNewer("1.0.9", "1.1.0"))
+        assertFalse(Updates.isNewer("v1.1", "1.1.0"))
+        assertFalse(Updates.isNewer("garbage", "1.1.0"))
+    }
+}

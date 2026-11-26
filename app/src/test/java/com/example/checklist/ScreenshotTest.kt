@@ -73,3 +73,10 @@ class FullSettingsScreenshot {
         }
     }
 }
+
+class UpdateBannerScreenshot {
+    @get:Rule val paparazzi = Paparazzi(deviceConfig = DeviceConfig.PIXEL_5)
+    @Test fun homeWithUpdate() = paparazzi.snapshot {
+        ChecklistTheme(false) { HomeScreen(sampleLists(), "Thursday, November 26", {}, {}, {}, update = UpdateInfo("1.3.0", "", "")) }
+    }
+}

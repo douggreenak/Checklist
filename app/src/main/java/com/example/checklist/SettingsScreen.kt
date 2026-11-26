@@ -26,8 +26,12 @@ fun SettingsScreen(
     account: String? = null, syncStatus: String = "", onSignOut: () -> Unit = {},
     /** Returns null on success, or an error message. */
     onChangePassword: (suspend (current: String, new: String) -> String?)? = null,
-    passwordFormOpen: Boolean = false
+    passwordFormOpen: Boolean = false,
+    version: String = "",
+    /** Returns the newer release, or null if up to date. May throw IOException. */
+    onCheckUpdate: (suspend () -> UpdateInfo?)? = null
 ) {
+    ClearFocusWhenKeyboardHides()
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
@@ -86,6 +90,8 @@ fun SettingsScreen(
                 ) { Text("Sign out", fontSize = 18.sp, color = DeleteRed) }
             }
 
+            if (onCheckUpdate != null) UpdateSection(version, onCheckUpdate)
+
             OutlinedButton(
                 onClick = { settings.reset() },
                 modifier = Modifier.fillMaxWidth().height(56.dp).padding(top = 0.dp),
@@ -94,6 +100,41 @@ fun SettingsScreen(
             Spacer(Modifier.height(24.dp).navigationBarsPadding())
         }
     }
+}
+
+@Composable
+private fun UpdateSection(version: String, check: suspend () -> UpdateInfo?) {
+    var checking by remember { mutableStateOf(false) }
+    var message by remember { mutableStateOf<String?>(null) }
+    var found by remember { mutableStateOf<UpdateInfo?>(null) }
+    val scope = rememberCoroutineScope()
+    val uri = androidx.compose.ui.platform.LocalUriHandler.current
+
+    Section("About")
+    Text("Checklist $version", fontSize = 18.sp, color = MaterialTheme.colorScheme.onBackground)
+    if (message != null) Text(message!!, fontSize = 17.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    val update = found
+    if (update != null) Button(
+        onClick = { uri.openUri(update.url) },
+        modifier = Modifier.fillMaxWidth().height(60.dp), shape = RoundedCornerShape(16.dp)
+    ) { Text("Download ${update.version}", fontSize = 19.sp) }
+    OutlinedButton(
+        onClick = {
+            scope.launch {
+                checking = true; message = null
+                try {
+                    val u = check()
+                    found = u
+                    message = if (u == null) "You're up to date." else "Version ${u.version} is available."
+                } catch (e: java.io.IOException) {
+                    message = "Couldn't check for updates. Check your connection."
+                }
+                checking = false
+            }
+        },
+        enabled = !checking,
+        modifier = Modifier.fillMaxWidth().height(56.dp), shape = RoundedCornerShape(16.dp)
+    ) { Text(if (checking) "Checking…" else "Check for updates", fontSize = 18.sp) }
 }
 
 @Composable

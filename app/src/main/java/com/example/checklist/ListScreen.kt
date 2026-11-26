@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.sp
 
 @Composable
 fun ListScreen(list: TaskList, onBack: () -> Unit, onDeleteList: () -> Unit) {
+    ClearFocusWhenKeyboardHides()
     var focusId by remember { mutableStateOf<Long?>(null) }
     val active = list.items.filter { !it.checked }
     val completed = list.items.filter { it.checked }

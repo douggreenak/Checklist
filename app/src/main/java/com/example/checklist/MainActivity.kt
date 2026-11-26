@@ -25,6 +25,7 @@ class MainActivity : ComponentActivity() {
         val lists = mutableStateListOf<TaskList>().apply { addAll(Store.load(prefs)) }
         val settings = Store.loadSettings(prefs)
         val session = Session(prefs)
+        val version = runCatching { packageManager.getPackageInfo(packageName, 0).versionName }.getOrNull() ?: ""
         setContent {
             LaunchedEffect(Unit) { snapshotFlow { Store.toJson(lists) }.collect { Store.save(prefs, it) } }
             LaunchedEffect(Unit) { snapshotFlow { Store.settingsToJson(settings) }.collect { Store.saveSettings(prefs, it) } }
@@ -32,13 +33,20 @@ class MainActivity : ComponentActivity() {
 
             var openId by rememberSaveable { mutableStateOf<String?>(null) }
             var inSettings by rememberSaveable { mutableStateOf(false) }
+            var update by remember { mutableStateOf<UpdateInfo?>(null) }
+            var updateDismissed by remember { mutableStateOf(false) }
+            // Quietly look for a newer GitHub release each time the app starts.
+            LaunchedEffect(Unit) {
+                update = try { withContext(Dispatchers.IO) { Updates.check(version) } } catch (e: IOException) { null }
+            }
             val open = lists.firstOrNull { it.id == openId }
             BackHandler(enabled = open != null || inSettings) {
                 if (inSettings) inSettings = false else openId = null
             }
             val dark = when (settings.mode) { 1 -> false; 2 -> true; else -> isSystemInDarkTheme() }
             ChecklistTheme(dark, settings.themeColor, settings.pureBlack) {
-                val scope = rememberCoroutineScope()
+            val uriHandler = androidx.compose.ui.platform.LocalUriHandler.current
+            val scope = rememberCoroutineScope()
                 var busy by remember { mutableStateOf(false) }
                 var error by remember { mutableStateOf<String?>(null) }
                 when {
@@ -62,6 +70,8 @@ class MainActivity : ComponentActivity() {
                     inSettings -> SettingsScreen(
                         settings, onBack = { inSettings = false },
                         account = session.server, syncStatus = session.status,
+                        version = version,
+                        onCheckUpdate = { withContext(Dispatchers.IO) { Updates.check(version) } },
                         onSignOut = { session.signOut(); inSettings = false; openId = null },
                         onChangePassword = { current, new ->
                             try {
@@ -82,7 +92,10 @@ class MainActivity : ComponentActivity() {
                         onOpen = { openId = it.id },
                         onAdd = { val l = TaskList(color = Palette[lists.size % Palette.size]); lists.add(l); openId = l.id },
                         onDelete = { lists.remove(it) },
-                        onSettings = { inSettings = true }
+                        onSettings = { inSettings = true },
+                        update = update.takeUnless { updateDismissed },
+                        onUpdate = { update?.let { uriHandler.openUri(it.url) } },
+                        onDismissUpdate = { updateDismissed = true }
                     )
                 }
             }

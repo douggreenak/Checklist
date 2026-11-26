@@ -1,5 +1,7 @@
 # Checklist
 
+<img src="docs/icon.png" width="96" align="right" alt="Checklist app icon">
+
 A simple Android checklist app built for big, easy taps.
 
 **[Download the latest APK](https://github.com/douggreenak/Checklist/releases/latest)** – on your phone, open it and allow "install unknown apps" for your browser.
@@ -12,6 +14,7 @@ A simple Android checklist app built for big, easy taps.
 - **Instant delete** – the red ✕ (or a left swipe) removes it right away, no "are you sure?" popup
 - **Custom themes** – Settings (⚙ on the home screen) lets you choose System / Light / Dark, a theme color that tints the whole app, and a pure-black dark mode
 - **Password protected and synced** – sign in with a password; your lists are stored in a MySQL/MariaDB database through a small PHP API (see [`server/`](server/README.md)), so they sync between devices and aren't public. They're also cached on the phone so the app works offline
+- **Update check** – Settings → About → Check for updates looks at the GitHub releases, and a banner on the lists screen appears when a newer version is out
 - Everything is saved automatically
 
 | | Lists | A list (completed shown) |

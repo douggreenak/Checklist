@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.sp
 
 @Composable
 fun LoginScreen(initialServer: String, busy: Boolean, error: String?, onSignIn: (server: String, password: String) -> Unit) {
+    ClearFocusWhenKeyboardHides()
     var server by remember { mutableStateOf(initialServer) }
     var password by remember { mutableStateOf("") }
     Scaffold(containerColor = MaterialTheme.colorScheme.background) { pad ->

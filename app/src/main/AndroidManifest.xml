@@ -3,6 +3,7 @@
     <uses-permission android:name="android.permission.INTERNET" />
 
     <application
+        android:icon="@mipmap/ic_launcher"
         android:label="Checklist"
         android:theme="@style/Theme.Checklist">
         <activity
