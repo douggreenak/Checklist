@@ -20,10 +20,12 @@ class TaskList(
     name: String = "New list",
     items: List<Item> = emptyList(),
     showCompleted: Boolean = false,
+    colorIndex: Int = 0,
     val id: String = UUID.randomUUID().toString()
 ) {
     var name by mutableStateOf(name)
     var showCompleted by mutableStateOf(showCompleted)
+    var colorIndex by mutableStateOf(colorIndex)
     val items = mutableStateListOf<Item>().apply { addAll(items) }
 
     val remaining get() = items.count { !it.checked }
@@ -36,7 +38,7 @@ object Store {
     fun toJson(lists: List<TaskList>): String = JSONArray().also { arr ->
         lists.forEach { l ->
             arr.put(JSONObject()
-                .put("id", l.id).put("name", l.name).put("showCompleted", l.showCompleted)
+                .put("id", l.id).put("name", l.name).put("showCompleted", l.showCompleted).put("color", l.colorIndex)
                 .put("items", JSONArray().also { ia ->
                     l.items.forEach { ia.put(JSONObject().put("t", it.text).put("c", it.checked)) }
                 }))
@@ -51,6 +53,7 @@ object Store {
             TaskList(
                 name = o.getString("name"),
                 showCompleted = o.optBoolean("showCompleted"),
+                colorIndex = o.optInt("color", i),
                 id = o.getString("id"),
                 items = (0 until ia.length()).map { Item(ia.getJSONObject(it).getString("t"), ia.getJSONObject(it).getBoolean("c")) }
             )

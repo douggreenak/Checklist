@@ -1,6 +1,9 @@
 package com.example.checklist
 
 import android.content.Context
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
@@ -24,8 +27,9 @@ class MainActivity : ComponentActivity() {
                 if (open == null) {
                     HomeScreen(
                         lists,
+                        subtitle = SimpleDateFormat("EEEE, MMMM d", Locale.getDefault()).format(Date()),
                         onOpen = { openId = it.id },
-                        onAdd = { val l = TaskList(); lists.add(l); openId = l.id },
+                        onAdd = { val l = TaskList(colorIndex = lists.size % AccentCount); lists.add(l); openId = l.id },
                         onDelete = { lists.remove(it) }
                     )
                 } else {

@@ -13,7 +13,7 @@ class ChecklistScreenTest {
     @Test fun addButtonCreatesItem() {
         val list = TaskList("t")
         show(list)
-        rule.onNodeWithText("+ Add task").performClick()
+        rule.onNodeWithText("Add task").performClick()
         rule.waitForIdle()
         assert(list.items.size == 1)
     }
@@ -29,7 +29,7 @@ class ChecklistScreenTest {
     @Test fun deleteRemovesImmediately() {
         val list = TaskList("t", listOf(Item("milk")))
         show(list)
-        rule.onNodeWithText("✕").performClick()
+        rule.onNodeWithContentDescription("Delete task").performClick()
         rule.waitForIdle()
         assert(list.items.isEmpty())
     }
@@ -48,7 +48,7 @@ class ChecklistScreenTest {
         rule.onNodeWithText("milk").performTouchInput { swipeRight() }
         rule.waitForIdle()
         assert(list.items[0].checked)
-        rule.onNodeWithText("Completed (1)", substring = true).performClick()
+        rule.onNodeWithText("Completed", substring = true).performClick()
         rule.onNodeWithText("milk").assertExists()
     }
 }

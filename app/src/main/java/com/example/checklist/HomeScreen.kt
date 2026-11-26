@@ -1,62 +1,118 @@
 package com.example.checklist
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
-fun HomeScreen(lists: List<TaskList>, onOpen: (TaskList) -> Unit, onAdd: () -> Unit, onDelete: (TaskList) -> Unit) {
+fun HomeScreen(
+    lists: List<TaskList>, subtitle: String,
+    onOpen: (TaskList) -> Unit, onAdd: () -> Unit, onDelete: (TaskList) -> Unit
+) {
+    val todo = lists.sumOf { it.remaining }
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            Text(
-                "My Lists", fontSize = 32.sp, fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier.statusBarsPadding().padding(start = 20.dp, top = 20.dp, bottom = 8.dp, end = 20.dp)
-            )
+            Column(Modifier.statusBarsPadding().padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 12.dp)) {
+                Text("My Lists", fontSize = 36.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+                Text("$subtitle · $todo to do", fontSize = 17.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
         },
         bottomBar = {
             Button(
                 onClick = onAdd,
-                modifier = Modifier.fillMaxWidth().navigationBarsPadding().padding(12.dp).height(72.dp)
-            ) { Text("+ New list", fontSize = 24.sp) }
+                shape = RoundedCornerShape(24.dp),
+                modifier = Modifier.fillMaxWidth().navigationBarsPadding().padding(16.dp).height(68.dp)
+            ) {
+                Icon(Icons.Default.Add, null, modifier = Modifier.size(30.dp))
+                Spacer(Modifier.width(8.dp))
+                Text("New list", fontSize = 22.sp, fontWeight = FontWeight.SemiBold)
+            }
         }
     ) { pad ->
         LazyColumn(
             modifier = Modifier.padding(pad).fillMaxSize(),
-            contentPadding = PaddingValues(12.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            if (lists.isEmpty()) item {
-                Text("No lists yet. Tap “+ New list”.", fontSize = 20.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(16.dp))
-            }
+            if (lists.isEmpty()) item { EmptyState("📋", "No lists yet", "Tap “New list” to make your first one.") }
             items(lists, key = { it.id }) { list ->
-                SwipeRow(rightLabel = null, onSwipeRight = {}, onSwipeLeft = { onDelete(list) }) {
-                    Surface(
-                        onClick = { onOpen(list) },
-                        color = MaterialTheme.colorScheme.surfaceVariant,
-                        shape = RoundedCornerShape(16.dp),
-                        modifier = Modifier.fillMaxWidth().heightIn(min = 84.dp)
-                    ) {
-                        Column(Modifier.padding(horizontal = 20.dp, vertical = 14.dp), verticalArrangement = Arrangement.Center) {
-                            Text(list.name.ifBlank { "Untitled" }, fontSize = 24.sp, fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.onSurface)
-                            Text(
-                                "${list.remaining} to do" + if (list.done > 0) " · ${list.done} done" else "",
-                                fontSize = 17.sp, color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
+                SwipeRow(rightLabel = null, onSwipeRight = {}, onSwipeLeft = { onDelete(list) }, modifier = Modifier.animateItem()) {
+                    ListCard(list) { onOpen(list) }
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun ListCard(list: TaskList, onClick: () -> Unit) {
+    val accent = accentFor(list.colorIndex)
+    Surface(
+        onClick = onClick,
+        color = MaterialTheme.colorScheme.surface,
+        shape = RoundedCornerShape(20.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(Modifier.size(52.dp).clip(CircleShape).background(accent.color), contentAlignment = Alignment.Center) {
+                    Text(list.name.trim().firstOrNull()?.uppercase() ?: "•", color = accent.on, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+                }
+                Spacer(Modifier.width(16.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(list.name.ifBlank { "Untitled" }, fontSize = 22.sp, fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface, maxLines = 1)
+                    Text(
+                        when {
+                            list.items.isEmpty() -> "Empty"
+                            list.remaining == 0 -> "All done"
+                            else -> "${list.remaining} to do" + if (list.done > 0) " · ${list.done} done" else ""
+                        },
+                        fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                if (list.remaining > 0) Text("${list.remaining}", fontSize = 32.sp, fontWeight = FontWeight.Bold, color = accent.color)
+                else if (list.items.isNotEmpty()) Icon(Icons.Default.Check, "All done", tint = accent.color, modifier = Modifier.size(32.dp))
+            }
+            if (list.items.isNotEmpty()) {
+                Spacer(Modifier.height(14.dp))
+                LinearProgressIndicator(
+                    progress = { list.done.toFloat() / list.items.size },
+                    color = accent.color, trackColor = accent.color.copy(alpha = 0.18f),
+                    gapSize = 0.dp, drawStopIndicator = {},
+                    modifier = Modifier.fillMaxWidth().height(8.dp).clip(CircleShape)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun EmptyState(emoji: String, title: String, hint: String) {
+    Column(
+        Modifier.fillMaxWidth().padding(vertical = 56.dp, horizontal = 24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(emoji, fontSize = 56.sp)
+        Spacer(Modifier.height(12.dp))
+        Text(title, fontSize = 22.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onBackground)
+        Text(hint, fontSize = 17.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }

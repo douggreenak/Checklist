@@ -11,11 +11,12 @@ class ModelTest {
     }
 
     @Test fun jsonRoundTrip() {
-        val l = TaskList("Groceries", listOf(Item("milk", true), Item("eggs")), showCompleted = true)
+        val l = TaskList("Groceries", listOf(Item("milk", true), Item("eggs")), showCompleted = true, colorIndex = 3)
         val back = Store.parse(Store.toJson(listOf(l))).single()
         assertEquals("Groceries", back.name)
         assertEquals(l.id, back.id)
         assertTrue(back.showCompleted)
+        assertEquals(3, back.colorIndex)
         assertEquals(listOf("milk", "eggs"), back.items.map { it.text })
         assertEquals(listOf(true, false), back.items.map { it.checked })
     }
