@@ -3,14 +3,16 @@ package com.example.checklist
 import app.cash.paparazzi.DeviceConfig
 import app.cash.paparazzi.Paparazzi
 import com.android.resources.NightMode
+import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.padding
 import org.junit.Rule
 import org.junit.Test
 
 private fun sampleLists() = listOf(
-    TaskList("Groceries", listOf(Item("Milk", true), Item("Eggs"), Item("Bread"), Item("Coffee beans")), colorIndex = 0),
-    TaskList("Work", listOf(Item("Send invoice"), Item("Call plumber", true), Item("Book flights", true)), colorIndex = 1),
-    TaskList("Weekend", listOf(Item("Hike"), Item("Laundry")), colorIndex = 2),
-    TaskList("Ideas", colorIndex = 4)
+    TaskList("Groceries", listOf(Item("Milk", true), Item("Eggs"), Item("Bread"), Item("Coffee beans")), color = Palette[0]),
+    TaskList("Work", listOf(Item("Send invoice"), Item("Call plumber", true), Item("Book flights", true)), color = Palette[1]),
+    TaskList("Weekend", listOf(Item("Hike"), Item("Laundry")), color = Palette[2]),
+    TaskList("Ideas", color = Palette[4])
 )
 
 private fun sampleList() = TaskList(
@@ -29,4 +31,30 @@ class DarkScreenshots {
     @get:Rule val paparazzi = Paparazzi(deviceConfig = DeviceConfig.PIXEL_5.copy(nightMode = NightMode.NIGHT))
     @Test fun home() = paparazzi.snapshot { ChecklistTheme(true) { HomeScreen(sampleLists(), "Thursday, November 26", {}, {}, {}) } }
     @Test fun list() = paparazzi.snapshot { ChecklistTheme(true) { ListScreen(sampleList(), {}, {}) } }
+}
+
+private val teal = Palette[2]
+
+class ThemeScreenshots {
+    @get:Rule val paparazzi = Paparazzi(deviceConfig = DeviceConfig.PIXEL_5.copy(nightMode = NightMode.NIGHT))
+    @Test fun settingsDarkBlack() = paparazzi.snapshot {
+        ChecklistTheme(true, teal, pureBlack = true) { SettingsScreen(Settings(2, teal, true)) {} }
+    }
+    @Test fun homeDarkBlackTeal() = paparazzi.snapshot {
+        ChecklistTheme(true, teal, pureBlack = true) { HomeScreen(sampleLists(), "Thursday, November 26", {}, {}, {}) }
+    }
+}
+
+class LightThemeScreenshots {
+    @get:Rule val paparazzi = Paparazzi(deviceConfig = DeviceConfig.PIXEL_5)
+    @Test fun settingsLight() = paparazzi.snapshot { ChecklistTheme(false) { SettingsScreen(Settings()) {} } }
+    @Test fun homeLightPink() = paparazzi.snapshot {
+        ChecklistTheme(false, Palette[5]) { HomeScreen(sampleLists(), "Thursday, November 26", {}, {}, {}) }
+    }
+    @Test fun colorPicker() = paparazzi.snapshot {
+        ChecklistTheme(false) {
+            androidx.compose.material3.Surface { androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.padding(24.dp)) {
+                ColorPicker(Palette[1], {}) } }
+        }
+    }
 }

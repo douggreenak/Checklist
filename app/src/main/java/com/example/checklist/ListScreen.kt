@@ -38,7 +38,8 @@ fun ListScreen(list: TaskList, onBack: () -> Unit, onDeleteList: () -> Unit) {
     var focusId by remember { mutableStateOf<Long?>(null) }
     val active = list.items.filter { !it.checked }
     val completed = list.items.filter { it.checked }
-    val accent = accentFor(list.colorIndex)
+    val accent = accentFor(list.color)
+    var picker by remember { mutableStateOf(false) }
 
     fun addAfter(item: Item?) {
         val new = Item()
@@ -49,7 +50,7 @@ fun ListScreen(list: TaskList, onBack: () -> Unit, onDeleteList: () -> Unit) {
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
-        topBar = { ListTopBar(list, accent, onBack, onDeleteList) },
+        topBar = { ListTopBar(list, accent, onBack, onDeleteList) { picker = true } },
         bottomBar = {
             Button(
                 onClick = { addAfter(active.lastOrNull()) },
@@ -63,6 +64,7 @@ fun ListScreen(list: TaskList, onBack: () -> Unit, onDeleteList: () -> Unit) {
             }
         }
     ) { pad ->
+        if (picker) ColorPickerDialog("List color", list.color, { list.color = it }) { picker = false }
         LazyColumn(
             modifier = Modifier.padding(pad).fillMaxSize(),
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
@@ -104,7 +106,7 @@ fun ListScreen(list: TaskList, onBack: () -> Unit, onDeleteList: () -> Unit) {
 }
 
 @Composable
-private fun ListTopBar(list: TaskList, accent: Accent, onBack: () -> Unit, onDeleteList: () -> Unit) {
+private fun ListTopBar(list: TaskList, accent: Accent, onBack: () -> Unit, onDeleteList: () -> Unit, onChangeColor: () -> Unit) {
     var menu by remember { mutableStateOf(false) }
     Column(Modifier.fillMaxWidth().statusBarsPadding().padding(start = 8.dp, end = 8.dp, top = 8.dp, bottom = 8.dp)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -126,7 +128,7 @@ private fun ListTopBar(list: TaskList, accent: Accent, onBack: () -> Unit, onDel
                     DropdownMenuItem(
                         text = { Text("Change color", fontSize = 19.sp) },
                         leadingIcon = { Box(Modifier.size(22.dp).clip(CircleShape).background(accent.color)) },
-                        onClick = { list.colorIndex = (list.colorIndex + 1) % AccentCount },
+                        onClick = { menu = false; onChangeColor() },
                         modifier = Modifier.heightIn(min = 56.dp)
                     )
                     DropdownMenuItem(

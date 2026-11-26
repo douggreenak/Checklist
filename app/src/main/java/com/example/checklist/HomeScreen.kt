@@ -10,6 +10,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -22,15 +23,24 @@ import androidx.compose.ui.unit.sp
 @Composable
 fun HomeScreen(
     lists: List<TaskList>, subtitle: String,
-    onOpen: (TaskList) -> Unit, onAdd: () -> Unit, onDelete: (TaskList) -> Unit
+    onOpen: (TaskList) -> Unit, onAdd: () -> Unit, onDelete: (TaskList) -> Unit,
+    onSettings: () -> Unit = {}
 ) {
     val todo = lists.sumOf { it.remaining }
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            Column(Modifier.statusBarsPadding().padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 12.dp)) {
-                Text("My Lists", fontSize = 36.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
-                Text("$subtitle · $todo to do", fontSize = 17.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Row(
+                Modifier.statusBarsPadding().padding(start = 24.dp, end = 8.dp, top = 20.dp, bottom = 12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text("My Lists", fontSize = 36.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+                    Text("$subtitle · $todo to do", fontSize = 17.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                IconButton(onClick = onSettings, modifier = Modifier.size(60.dp)) {
+                    Icon(Icons.Default.Settings, "Settings", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(32.dp))
+                }
             }
         },
         bottomBar = {
@@ -62,7 +72,7 @@ fun HomeScreen(
 
 @Composable
 private fun ListCard(list: TaskList, onClick: () -> Unit) {
-    val accent = accentFor(list.colorIndex)
+    val accent = accentFor(list.color)
     Surface(
         onClick = onClick,
         color = MaterialTheme.colorScheme.surface,
