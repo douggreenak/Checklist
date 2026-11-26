@@ -1,0 +1,16 @@
+{
+  "name": "checklist-web",
+  "version": "1.0.0",
+  "description": "Material 3 Expressive web version of Checklist",
+  "scripts": {
+    "build": "node build.mjs",
+    "test": "node tests/e2e.mjs"
+  },
+  "type": "commonjs",
+  "dependencies": {
+    "@material/material-color-utilities": "^0.4.0",
+    "esbuild": "^0.28.2",
+    "playwright-core": "^1.65.1"
+  },
+  "private": true
+}

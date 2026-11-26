@@ -2,9 +2,20 @@
 RewriteEngine On
 RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
 
-<Files "config*.php">
-    Require all denied
-</Files>
+# Always use HTTPS.
+RewriteCond %{HTTPS} off
+RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
 <Files "config.php">
     Require all denied
 </Files>
+
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "DENY"
+    Header always set Referrer-Policy "no-referrer"
+    Header always set Strict-Transport-Security "max-age=31536000"
+    <FilesMatch "\.(html|php)$">
+        Header set Cache-Control "no-store"
+    </FilesMatch>
+</IfModule>

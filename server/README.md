@@ -12,7 +12,8 @@ the database password lives only in `config.php` on your web host.
    `public_html/checklist/`.
 3. Your site needs a valid HTTPS certificate on a domain name (Android won't accept a bare IP address
    with a self-signed certificate).
-4. In the app, sign in with the server address (`yourdomain.com/checklist`) and your app password.
+4. To also host the web version, upload the contents of `web/dist/` (after `npm run build` in `web/`) to the same folder, or run `web/deploy.sh`. Then open the address in a browser.
+5. In the app, sign in with the server address (`yourdomain.com/checklist`) and your app password.
 
 The tables are created automatically on first use.
 

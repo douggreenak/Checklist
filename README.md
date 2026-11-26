@@ -25,6 +25,16 @@ A simple Android checklist app built for big, easy taps.
 |---|---|---|
 | ![](app/src/test/snapshots/images/com.example.checklist_LightThemeScreenshots_settingsLight.png) | ![](app/src/test/snapshots/images/com.example.checklist_ThemeScreenshots_settingsDarkBlack.png) | ![](app/src/test/snapshots/images/com.example.checklist_LightThemeScreenshots_homeLightPink.png) |
 
+## Web version
+
+The same app runs in any browser, signed in with the same password and synced with the phone app (see [`web/`](web/README.md)).
+It uses Material 3 Expressive: bold type, big rounded shapes that morph on hover and press, and a color
+scheme generated from each list's color.
+
+| Phone | Desktop (dark) | Settings |
+|---|---|---|
+| ![Web on a phone](docs/web-home.png) | ![Web on desktop](docs/web-desktop-dark.png) | ![Web settings](docs/web-settings.png) |
+
 ## Build and test
 
 ```

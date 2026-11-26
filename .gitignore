@@ -8,3 +8,7 @@ local.properties
 
 # Server secrets: never commit
 server/config.php
+
+# Web build
+web/node_modules/
+web/dist/
