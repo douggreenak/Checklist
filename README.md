@@ -2,6 +2,8 @@
 
 A simple Android checklist app built for big, easy taps.
 
+**[Download the latest APK](https://github.com/douggreenak/Checklist/releases/latest)** – on your phone, open it and allow "install unknown apps" for your browser.
+
 - **Multiple colored lists** – a home screen of lists with progress bars (like Microsoft To Do); tap a list to open it, rename it by tapping its title, and pick its color (12 presets or any custom hue) from the ⋮ menu
 - **Swipe gestures** – swipe a task **right** to mark it done (or not done), **left** to delete it; swipe a list left to delete it
 - **Completed tasks** – done tasks move into a collapsible "Completed" section with a count you can show or hide
