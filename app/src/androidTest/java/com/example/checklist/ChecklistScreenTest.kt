@@ -43,6 +43,7 @@ class ChecklistScreenTest {
         rule.onNodeWithText("Completed", substring = true).assertExists().performClick()
         rule.waitForIdle()
         assert(list.showCompleted)
-        if (rule.onAllNodesWithTag("task-row").fetchSemanticsNodes().isEmpty()) throw AssertionError("TREE: " + rule.onRoot().printToString(100))
+        rule.onNode(hasScrollAction()).performScrollToIndex(2) // small emulator screen: the row is below the fold
+        rule.onNodeWithTag("task-row").assertExists()
     }
 }
