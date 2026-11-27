@@ -39,8 +39,8 @@ svg { width:24px; height:24px; fill:currentColor; flex:none; }
 .lists-panel,.main-pane { position:relative; overflow-y:auto; overscroll-behavior:contain; background:var(--surface); flex-direction:column; }
 .lists-panel { display:flex; width:100%; }
 .main-pane { display:none; flex:1; }
-.view-list .lists-panel,.view-settings .lists-panel { display:none; }
-.view-list .main-pane,.view-settings .main-pane { display:flex; }
+.view-list .lists-panel,.view-all .lists-panel,.view-settings .lists-panel { display:none; }
+.view-list .main-pane,.view-all .main-pane,.view-settings .main-pane { display:flex; }
 .lists-panel > .pane-inner,.list-view > .pane-inner { flex:1; width:100%; }
 .list-view { display:flex; flex-direction:column; flex:1; min-height:100%; }
 .main-pane > .pane-inner { width:100%; }
@@ -227,3 +227,10 @@ dialog .swatch { width:68px; height:68px; }
 .drag:hover { background:color-mix(in srgb,var(--on-surface) 8%,transparent); }
 .swipe.shifting { transition:transform .22s var(--ease); }
 .swipe.dragging { z-index:5; box-shadow:0 12px 32px rgba(0,0,0,.28); transition:none; cursor:grabbing; }
+
+/* ---------- all tasks ---------- */
+.all-title { color:var(--primary); margin:4px 0 0; }
+.group-head { display:flex; align-items:center; gap:10px; margin:14px 4px 0; font-weight:750; font-size:1.15rem; color:var(--primary); }
+.group-head .dot { width:14px; height:14px; border-radius:50%; background:var(--primary); }
+.all-card .avatar { display:grid; place-items:center; }
+.all-card .avatar svg { width:30px; height:30px; }

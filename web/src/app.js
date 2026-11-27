@@ -46,6 +46,7 @@ const state = {
   settings: { mode: 0, color: PALETTE[0], black: false, ...LS.get('cl.settings', {}) },
   lists: [],
   focusId: null,
+  showAllCompleted: false,
   status: '',
   pwOpen: false,
 };
@@ -215,6 +216,7 @@ function route() {
   const m = location.hash.match(/^#\/list\/(.+)$/);
   if (m) { const l = state.lists.find(x => x.id === decodeURIComponent(m[1])); if (l) return { name: 'list', list: l }; }
   if (location.hash === '#/settings') return { name: 'settings' };
+  if (location.hash === '#/all') return { name: 'all' };
   return { name: 'home' };
 }
 const go = hash => { location.hash = hash; };
@@ -314,6 +316,48 @@ function listCard(l, current) {
   return wrap;
 }
 
+function allCard(r) {
+  const total = state.lists.reduce((n, l) => n + l.items.length, 0), todo = state.lists.reduce((n, l) => n + remaining(l), 0);
+  return h('button', { class: 'list-card all-card' + (r.name === 'all' ? ' current' : ''), type: 'button', onclick: () => go('#/all') },
+    h('div', { class: 'row' },
+      h('div', { class: 'avatar' }, icon('checklist')),
+      h('div', { class: 'meta' },
+        h('div', { class: 'name', text: 'All tasks' }),
+        h('div', { class: 'sub', text: `${total} in ${state.lists.length} ${state.lists.length === 1 ? 'list' : 'lists'}` })),
+      todo > 0 ? h('div', { class: 'count', text: String(todo) }) : null));
+}
+
+/* Every task from every list, grouped by list. These are the same item objects the lists hold. */
+function allView() {
+  const all = { items: state.lists.flatMap(l => l.items) };
+  const groups = pick => state.lists.map(l => [l, l.items.filter(i => pick(i))]).filter(([, it]) => it.length);
+  const group = ([l, items]) => {
+    const vars = listVars(l);
+    const head = h('div', { class: 'group-head' }, h('span', { class: 'dot' }), l.name.trim() || 'Untitled');
+    applyVars(head, vars);
+    return [head, ...items.map(i => { const w = taskRow(l, i, true); applyVars(w, vars); return w; })];
+  };
+  const act = groups(i => !i.c), comp = groups(i => i.c);
+  const n = all.items.length, d = done(all);
+  const view = h('div', { class: 'pane-inner' },
+    h('div', { class: 'top-row' },
+      h('button', { class: 'icon-btn back-btn', type: 'button', 'aria-label': 'Back', onclick: () => go('') }, icon('back')),
+      h('span', { class: 'grow' }),
+      h('span', { class: 'total-pill', 'aria-label': 'Total tasks', text: `${n} ${n === 1 ? 'task' : 'tasks'}` })),
+    h('h1', { class: 'display all-title', text: 'All tasks' }),
+    h('p', { class: 'label', text: n ? `${n - d} to do · ${d} done` : 'No tasks' }),
+    n ? h('div', { class: 'mt14' }, progressBar(all)) : null,
+    h('div', { class: 'tasks' },
+      !act.length ? h('div', { class: 'empty' }, h('div', { class: 'big' }, icon(n ? 'task_alt' : 'edit_note')), h('h3', { text: n ? 'All done!' : 'No tasks yet' }),
+        h('p', { text: n ? 'Nothing left to do in any list.' : 'Add tasks inside a list and they all show up here.' })) : act.flatMap(group),
+      comp.length ? h('button', { class: 'completed-head', type: 'button', 'aria-expanded': String(state.showAllCompleted), onclick: () => { state.showAllCompleted = !state.showAllCompleted; render(); } },
+        icon('expand'), 'Completed', h('span', { class: 'badge', text: String(d) })) : null,
+      state.showAllCompleted ? comp.flatMap(group) : null));
+  const root = h('section', { class: 'list-view all-view' }, view);
+  root.style.background = 'var(--surface)';
+  return root;
+}
+
 function listsPanel(r) {
   const todo = state.lists.reduce((n, l) => n + remaining(l), 0);
   return h('aside', { class: 'lists-panel' },
@@ -321,7 +365,7 @@ function listsPanel(r) {
       h('div', { class: 'top-row' }, h('span', { class: 'grow' }), h('button', { class: 'icon-btn', 'aria-label': 'Settings', onclick: () => go('#/settings') }, icon('settings'))),
       h('div', { class: 'panel-head' }, h('div', {}, h('h1', { class: 'display', text: 'My Lists' }), h('p', { class: 'label', text: `${today()} · ${todo} to do` }))),
       state.lists.length
-        ? h('div', { class: 'stack' }, state.lists.map(l => listCard(l, r.list === l)))
+        ? h('div', { class: 'stack' }, allCard(r), state.lists.map(l => listCard(l, r.list === l)))
         : h('div', { class: 'empty' }, h('div', { class: 'big' }, icon('checklist')), h('h3', { text: 'No lists yet' }), h('p', { text: 'Tap “New list” to make your first one.' }))),
     h('div', { class: 'fab-wrap' }, h('button', { class: 'fab', type: 'button', onclick: newList }, icon('add'), 'New list')));
 }
@@ -342,7 +386,7 @@ function addTaskAfter(l, item) {
   changed();
 }
 
-function taskRow(l, item) {
+function taskRow(l, item, noDrag = false) {
   const ta = h('textarea', { rows: 1, placeholder: 'Type task…', enterkeyhint: 'next', 'aria-label': 'Task', data: { item: item.uid },
     oninput: e => {
       const t = e.target;
@@ -357,7 +401,7 @@ function taskRow(l, item) {
     h('button', { class: 'check', type: 'button', role: 'checkbox', 'aria-checked': String(item.c), 'aria-label': item.c ? 'Mark not done' : 'Mark done', onclick: toggle },
       h('span', { class: 'box' }, icon('check'))),
     ta,
-    item.c ? null : h('button', { class: 'drag', type: 'button', 'aria-label': 'Drag to reorder', onpointerdown: e => startReorder(e, l, item) }, icon('drag')),
+    item.c || noDrag ? null : h('button', { class: 'drag', type: 'button', 'aria-label': 'Drag to reorder', onpointerdown: e => startReorder(e, l, item) }, icon('drag')),
     h('button', { class: 'del', type: 'button', 'aria-label': 'Delete task', onclick: remove }, icon('close')));
   const wrap = swipeable(card, { right: toggle, left: remove, rightLabel: item.c ? 'Not done' : 'Done', rightIcon: item.c ? 'undo' : 'check' });
   wrap.dataset.uid = item.uid;
@@ -568,6 +612,7 @@ function shell() {
   const r = route();
   const main = h('main', { class: 'main-pane' },
     r.name === 'list' ? listView(r.list)
+      : r.name === 'all' ? allView()
       : r.name === 'settings' ? settingsView()
         : h('div', { class: 'pane-inner' }, h('div', { class: 'empty' }, h('div', { class: 'big' }, icon('checklist')), h('h3', { text: 'Pick a list' }), h('p', { text: 'Choose one on the left, or make a new one.' }))));
   return h('div', { class: 'shell view-' + r.name }, listsPanel(r), main);

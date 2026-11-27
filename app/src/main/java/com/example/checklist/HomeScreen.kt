@@ -22,6 +22,7 @@ fun HomeScreen(
     lists: List<TaskList>, subtitle: String,
     onOpen: (TaskList) -> Unit, onAdd: () -> Unit, onDelete: (TaskList) -> Unit,
     onSettings: () -> Unit = {},
+    onOpenAll: () -> Unit = {},
     update: UpdateInfo? = null,
     onUpdate: () -> Unit = {},
     installProgress: Float? = null,
@@ -80,6 +81,25 @@ fun HomeScreen(
                         IconButton(onClick = onDismissUpdate, modifier = Modifier.size(64.dp)) {
                             Icon(painterResource(R.drawable.ic_close), "Dismiss", modifier = Modifier.size(26.dp))
                         }
+                    }
+                }
+            }
+            if (lists.isNotEmpty()) item(key = "all") {
+                val total = lists.sumOf { it.items.size }
+                Surface(
+                    onClick = onOpenAll, color = MaterialTheme.colorScheme.primaryContainer, contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    shape = RoundedCornerShape(20.dp), modifier = Modifier.fillMaxWidth().animateItem()
+                ) {
+                    Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Box(Modifier.size(52.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary), contentAlignment = Alignment.Center) {
+                            Icon(painterResource(R.drawable.ic_checklist), null, tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(30.dp))
+                        }
+                        Spacer(Modifier.width(16.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text("All tasks", fontSize = 22.sp, fontWeight = FontWeight.SemiBold)
+                            Text("$total in ${lists.size} ${if (lists.size == 1) "list" else "lists"}", fontSize = 16.sp)
+                        }
+                        Text("$todo", fontSize = 32.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                     }
                 }
             }

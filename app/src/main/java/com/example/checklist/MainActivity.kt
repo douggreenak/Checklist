@@ -33,6 +33,7 @@ class MainActivity : ComponentActivity() {
 
             var openId by rememberSaveable { mutableStateOf<String?>(null) }
             var inSettings by rememberSaveable { mutableStateOf(false) }
+            var showAll by rememberSaveable { mutableStateOf(false) }
             var update by remember { mutableStateOf<UpdateInfo?>(null) }
             var updateDismissed by remember { mutableStateOf(false) }
             var installProgress by remember { mutableStateOf<Float?>(null) }
@@ -50,8 +51,8 @@ class MainActivity : ComponentActivity() {
                 update = try { withContext(Dispatchers.IO) { Updates.check(version) } } catch (e: IOException) { null }
             }
             val open = lists.firstOrNull { it.id == openId }
-            BackHandler(enabled = open != null || inSettings) {
-                if (inSettings) inSettings = false else openId = null
+            BackHandler(enabled = open != null || inSettings || showAll) {
+                if (inSettings) inSettings = false else if (showAll) showAll = false else openId = null
             }
             val dark = when (settings.mode) { 1 -> false; 2 -> true; else -> isSystemInDarkTheme() }
             ChecklistTheme(dark, settings.themeColor, settings.pureBlack) {
@@ -83,7 +84,7 @@ class MainActivity : ComponentActivity() {
                         version = version,
                         onCheckUpdate = { withContext(Dispatchers.IO) { Updates.check(version) } },
                         onInstall = startInstall, installProgress = installProgress, installMessage = installMessage,
-                        onSignOut = { session.signOut(); inSettings = false; openId = null },
+                        onSignOut = { session.signOut(); inSettings = false; showAll = false; openId = null },
                         onChangePassword = { current, new ->
                             try {
                                 val newToken = withContext(Dispatchers.IO) { Api(session.server).changePassword(session.token ?: "", current, new) }
@@ -96,6 +97,7 @@ class MainActivity : ComponentActivity() {
                             }
                         }
                     )
+                    showAll -> AllScreen(lists, onBack = { showAll = false })
                     open != null -> ListScreen(open, onBack = { openId = null }, onDeleteList = { lists.remove(open); openId = null })
                     else -> HomeScreen(
                         lists,
@@ -104,6 +106,7 @@ class MainActivity : ComponentActivity() {
                         onAdd = { val l = TaskList(color = Palette[lists.size % Palette.size]); lists.add(l); openId = l.id },
                         onDelete = { lists.remove(it) },
                         onSettings = { inSettings = true },
+                        onOpenAll = { showAll = true },
                         update = update.takeUnless { updateDismissed },
                         onUpdate = { update?.let(startInstall) },
                         installProgress = installProgress, installMessage = installMessage,

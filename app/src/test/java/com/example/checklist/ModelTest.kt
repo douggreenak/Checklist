@@ -61,3 +61,13 @@ class UpdatesTest {
         assertFalse(Updates.isNewer("garbage", "1.1.0"))
     }
 }
+
+class AllTasksSharingTest {
+    @org.junit.Test fun checkingInOnePlaceChecksTheOther() {
+        val list = TaskList(name = "A", items = listOf(Item(text = "x")))
+        val shown = listOf(list).flatMap { it.items }          // what the All screen draws
+        shown[0].checked = true
+        org.junit.Assert.assertTrue(list.items[0].checked)
+        org.junit.Assert.assertEquals(1, list.done)
+    }
+}

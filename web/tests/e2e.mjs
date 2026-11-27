@@ -60,6 +60,18 @@ await a.waitForTimeout(800);
 ok(await a.evaluate(() => { let v = JSON.parse(localStorage.getItem('cl.lists')); if (typeof v === 'string') v = JSON.parse(v); return v[0].items[0].t; }) === t1[0], 'new order is saved');
 ok(await a.locator('.list-view .top-row').evaluate(e => getComputedStyle(e).position) === 'sticky', 'top bar stays put when scrolling');
 
+/* 1c. All tasks view shares the same tasks */
+await a.click('.back-btn'); await a.waitForTimeout(300);
+await a.click('.all-card'); await a.waitForSelector('.all-view'); await a.waitForTimeout(300);
+const listTask = (await a.locator('.task textarea').first().inputValue());
+ok(await a.locator('.all-view .group-head').count() >= 1 && listTask !== '', 'All tasks view lists tasks grouped by list');
+const nAll = await a.locator('.all-view .task').count();
+await a.locator('.all-view .task .check').first().click(); await a.waitForTimeout(400);
+ok(await a.locator('.all-view .task').count() === nAll - 1, 'checking a task in All tasks moves it to Completed');
+await a.click('.back-btn'); await a.waitForTimeout(200); await a.locator('.list-card:not(.all-card)').first().click(); await a.waitForTimeout(300);
+if (await a.locator('.task.done').count() === 0) { await a.click('.completed-head'); await a.waitForTimeout(300); }
+ok((await a.locator('.task.done textarea').evaluateAll(els => els.map(e => e.value))).includes(listTask), 'the same task is checked off inside its own list');
+
 /* 2. list color dialog */
 const before = await a.evaluate(() => getComputedStyle(document.querySelector('.list-view')).getPropertyValue('--primary'));
 await a.click('[aria-label="List menu"]'); await a.click('.menu >> text=Change color');

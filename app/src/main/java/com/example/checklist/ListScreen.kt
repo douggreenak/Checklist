@@ -236,7 +236,7 @@ private fun ListTopBar(list: TaskList, accent: Accent, onBack: () -> Unit, onDel
 }
 
 @Composable
-private fun TaskRow(
+internal fun TaskRow(
     item: Item, list: TaskList, accent: Accent,
     requestFocus: Boolean, onFocused: () -> Unit, onEnter: () -> Unit, modifier: Modifier,
     reorder: Reorder? = null

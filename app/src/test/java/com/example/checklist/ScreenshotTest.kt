@@ -25,6 +25,7 @@ class LightScreenshots {
     @get:Rule val paparazzi = Paparazzi(deviceConfig = DeviceConfig.PIXEL_5)
     @Test fun home() = paparazzi.snapshot { ChecklistTheme(false) { HomeScreen(sampleLists(), "Thursday, November 26", {}, {}, {}) } }
     @Test fun list() = paparazzi.snapshot { ChecklistTheme(false) { ListScreen(sampleList(), {}, {}) } }
+    @Test fun all() = paparazzi.snapshot { ChecklistTheme(false) { AllScreen(sampleLists()) {} } }
 }
 
 class DarkScreenshots {
