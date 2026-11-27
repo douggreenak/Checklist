@@ -84,6 +84,8 @@ svg { width:24px; height:24px; fill:currentColor; flex:none; }
 /* ---------- headers ---------- */
 .top-row { display:flex; align-items:center; justify-content:space-between; min-height:56px; margin:0 -8px; }
 .top-row .grow { flex:1; }
+.list-view .top-row { position:sticky; top:0; z-index:6; background:var(--surface); padding:8px 8px 8px; margin:-8px -8px 0; }
+.total-pill { padding:10px 20px; border-radius:999px; background:color-mix(in srgb,var(--primary) 14%,transparent); color:var(--primary); font-weight:750; font-size:1.1rem; margin-right:4px; }
 .panel-head { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin:12px 0 22px 4px; }
 .title-input { width:100%; border:0; background:transparent; color:var(--primary); font:inherit; font-size:clamp(2.4rem,8vw,3.6rem); font-weight:800; letter-spacing:-.025em; line-height:1.1; padding:4px; margin:4px -4px 0; border-radius:16px; }
 .title-input:focus { outline:none; background:var(--surface-container); }
@@ -218,3 +220,10 @@ dialog .swatch { width:68px; height:68px; }
 
 .mt14 { margin-top:14px; }
 .mt24 { margin-top:24px; }
+
+/* ---------- reorder ---------- */
+.drag { width:56px; align-self:stretch; border:0; background:transparent; color:var(--on-surface-variant); display:grid; place-items:center; flex:none; touch-action:none; cursor:grab; border-radius:20px; }
+.drag svg { width:32px; height:32px; }
+.drag:hover { background:color-mix(in srgb,var(--on-surface) 8%,transparent); }
+.swipe.shifting { transition:transform .22s var(--ease); }
+.swipe.dragging { z-index:5; box-shadow:0 12px 32px rgba(0,0,0,.28); transition:none; cursor:grabbing; }

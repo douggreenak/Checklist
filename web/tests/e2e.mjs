@@ -18,7 +18,7 @@ async function login(p, pw = 'password') {
 async function swipe(p, selector, dx) {
   const b = await p.locator(selector).boundingBox();
   const cdp = await p.context().newCDPSession(p);
-  const y = b.y + b.height / 2, x0 = b.x + b.width / 2 + (dx > 0 ? -60 : 60);
+  const y = b.y + b.height / 2, x0 = b.x + b.width / 2 + (dx > 0 ? -60 : 10);
   const pt = x => [{ x, y, id: 1 }];
   await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: pt(x0) });
   for (let i = 1; i <= 12; i++) await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: pt(x0 + dx * i / 12) });
@@ -42,6 +42,23 @@ await a.click('.completed-head'); await a.waitForTimeout(300);
 ok(await a.locator('.task.done').count() === 1, 'Completed section expands to show the finished task');
 await swipe(a, '.task.done >> nth=0', 260);
 ok(await a.locator('.task.done').count() === 0, 'swipe right on a completed task restores it');
+
+/* 1b. short swipes do nothing; reorder; total count */
+const nBefore = await a.locator('.task').count();
+await swipe(a, '.task >> nth=0', 80);
+await swipe(a, '.task >> nth=0', -80);
+ok(await a.locator('.task').count() === nBefore && await a.locator('.task.done').count() === 0, 'a swipe shorter than a third of the row does nothing');
+ok((await a.textContent('.total-pill')).startsWith(String(await a.locator('.task').count())), 'total task count shown in the top bar');
+const texts = async () => a.locator('.task textarea').evaluateAll(els => els.map(e => e.value));
+const t0 = await texts();
+const hb = await a.locator('.task .drag >> nth=0').boundingBox(), hb2 = await a.locator('.task .drag >> nth=1').boundingBox();
+await a.mouse.move(hb.x + hb.width / 2, hb.y + hb.height / 2); await a.mouse.down();
+await a.mouse.move(hb2.x + hb2.width / 2, hb2.y + hb2.height / 2 + 20, { steps: 10 }); await a.mouse.up(); await a.waitForTimeout(400);
+const t1 = await texts();
+ok(t1[0] === t0[1] && t1[1] === t0[0], 'dragging a task by its handle reorders it');
+await a.waitForTimeout(800);
+ok(await a.evaluate(() => { let v = JSON.parse(localStorage.getItem('cl.lists')); if (typeof v === 'string') v = JSON.parse(v); return v[0].items[0].t; }) === t1[0], 'new order is saved');
+ok(await a.locator('.list-view .top-row').evaluate(e => getComputedStyle(e).position) === 'sticky', 'top bar stays put when scrolling');
 
 /* 2. list color dialog */
 const before = await a.evaluate(() => getComputedStyle(document.querySelector('.list-view')).getPropertyValue('--primary'));

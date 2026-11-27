@@ -5,7 +5,14 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.zIndex
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -40,11 +47,60 @@ fun ListScreen(list: TaskList, onBack: () -> Unit, onDeleteList: () -> Unit) {
     val accent = accentFor(list.color)
     var picker by remember { mutableStateOf(false) }
 
+    val listState = rememberLazyListState()
+    val scope = rememberCoroutineScope()
+    var scrollToId by remember { mutableStateOf<Long?>(null) }
+    var draggingId by remember { mutableStateOf<Long?>(null) }
+    var dragDelta by remember { mutableFloatStateOf(0f) }
+    var lastSwapOffset by remember { mutableIntStateOf(Int.MIN_VALUE) }
+
     fun addAfter(item: Item?) {
         val new = Item()
         val at = if (item == null) list.items.size else list.items.indexOf(item) + 1
         list.items.add(at, new)
         focusId = new.id
+        scrollToId = new.id
+    }
+
+    // Bring a freshly added task into view.
+    LaunchedEffect(scrollToId) {
+        val id = scrollToId ?: return@LaunchedEffect
+        withFrameNanos { }
+        val index = active.indexOfFirst { it.id == id }
+        val info = listState.layoutInfo
+        val shown = info.visibleItemsInfo.firstOrNull { it.key == id }
+        val fullyVisible = shown != null && shown.offset >= info.viewportStartOffset && shown.offset + shown.size <= info.viewportEndOffset
+        if (index >= 0 && !fullyVisible) listState.animateScrollToItem(index)
+        scrollToId = null
+    }
+
+    fun drag(id: Long, dy: Float) {
+        dragDelta += dy
+        val info = listState.layoutInfo
+        val me = info.visibleItemsInfo.firstOrNull { it.key == id } ?: return
+        if (me.offset != lastSwapOffset) {
+            val center = me.offset + me.size / 2f + dragDelta
+            val activeIds = active.map { it.id }.toSet()
+            val target = info.visibleItemsInfo.firstOrNull { it.key != id && it.key in activeIds && center >= it.offset && center <= it.offset + it.size }
+            if (target != null) {
+                val i = list.items.indexOfFirst { it.id == id }
+                val j = list.items.indexOfFirst { it.id == target.key }
+                if (i >= 0 && j >= 0) {
+                    val a = list.items[i]; list.items[i] = list.items[j]; list.items[j] = a
+                    val newOffset = if (target.offset < me.offset) target.offset else target.offset + target.size - me.size
+                    dragDelta += me.offset - newOffset
+                    lastSwapOffset = me.offset
+                }
+            }
+        }
+        // Scroll when held near the top or bottom edge.
+        val top = me.offset + dragDelta; val bottom = top + me.size
+        val step = when {
+            top < info.viewportStartOffset + 40 -> -28f
+            bottom > info.viewportEndOffset - 40 -> 28f
+            else -> 0f
+        }
+        if (step != 0f) scope.launch { dragDelta += listState.scrollBy(step) }
     }
 
     Scaffold(
@@ -65,6 +121,7 @@ fun ListScreen(list: TaskList, onBack: () -> Unit, onDeleteList: () -> Unit) {
     ) { pad ->
         if (picker) ColorPickerDialog("List color", list.color, { list.color = it }) { picker = false }
         LazyColumn(
+            state = listState,
             modifier = Modifier.padding(pad).fillMaxSize(),
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
@@ -74,7 +131,17 @@ fun ListScreen(list: TaskList, onBack: () -> Unit, onDeleteList: () -> Unit) {
                 else EmptyState(R.drawable.ic_task_alt, "All done!", "Nothing left to do on this list.")
             }
             items(active, key = { it.id }) { item ->
-                TaskRow(item, list, accent, focusId == item.id, { focusId = null }, { addAfter(item) }, Modifier.animateItem())
+                val dragging = draggingId == item.id
+                TaskRow(
+                    item, list, accent, focusId == item.id, { focusId = null }, { addAfter(item) },
+                    if (dragging) Modifier.zIndex(1f).graphicsLayer { translationY = dragDelta } else Modifier.animateItem(),
+                    reorder = Reorder(
+                        dragging,
+                        onStart = { draggingId = item.id; dragDelta = 0f; lastSwapOffset = Int.MIN_VALUE },
+                        onMove = { drag(item.id, it) },
+                        onEnd = { draggingId = null; dragDelta = 0f }
+                    )
+                )
             }
             if (completed.isNotEmpty()) {
                 item(key = "completed-header") {
@@ -113,6 +180,13 @@ private fun ListTopBar(list: TaskList, accent: Accent, onBack: () -> Unit, onDel
                 Icon(painterResource(R.drawable.ic_arrow_back), "Back", tint = accent.color, modifier = Modifier.size(30.dp))
             }
             Spacer(Modifier.weight(1f))
+            Box(Modifier.clip(CircleShape).background(accent.color.copy(alpha = 0.14f)).padding(horizontal = 16.dp, vertical = 8.dp)) {
+                Text(
+                    "${list.items.size} ${if (list.items.size == 1) "task" else "tasks"}",
+                    fontSize = 18.sp, fontWeight = FontWeight.Bold, color = accent.color
+                )
+            }
+            Spacer(Modifier.width(4.dp))
             Box {
                 IconButton(onClick = { menu = true }, modifier = Modifier.size(64.dp)) {
                     Icon(painterResource(R.drawable.ic_more_vert), "Menu", tint = accent.color, modifier = Modifier.size(30.dp))
@@ -164,7 +238,8 @@ private fun ListTopBar(list: TaskList, accent: Accent, onBack: () -> Unit, onDel
 @Composable
 private fun TaskRow(
     item: Item, list: TaskList, accent: Accent,
-    requestFocus: Boolean, onFocused: () -> Unit, onEnter: () -> Unit, modifier: Modifier
+    requestFocus: Boolean, onFocused: () -> Unit, onEnter: () -> Unit, modifier: Modifier,
+    reorder: Reorder? = null
 ) {
     SwipeRow(
         rightLabel = if (item.checked) "Not done" else "Done",
@@ -184,12 +259,38 @@ private fun TaskRow(
             ) {
                 CheckCircle(item.checked, accent) { item.checked = !item.checked }
                 TaskField(item, requestFocus, onFocused, onEnter, Modifier.weight(1f).padding(horizontal = 6.dp, vertical = 10.dp))
+                if (reorder != null) DragHandle(reorder)
                 IconButton(
                     onClick = { list.items.remove(item) },
                     modifier = Modifier.size(68.dp).clip(CircleShape).background(DeleteRed.copy(alpha = 0.12f))
                 ) { Icon(painterResource(R.drawable.ic_close), "Delete task", tint = DeleteRed, modifier = Modifier.size(32.dp)) }
             }
         }
+    }
+}
+
+class Reorder(val dragging: Boolean, val onStart: () -> Unit, val onMove: (Float) -> Unit, val onEnd: () -> Unit)
+
+/** Grab and drag to move a task up or down. */
+@Composable
+private fun DragHandle(reorder: Reorder) {
+    val r by rememberUpdatedState(reorder)
+    Box(
+        Modifier.width(52.dp).fillMaxHeight()
+            .pointerInput(Unit) {
+                detectDragGestures(
+                    onDragStart = { r.onStart() },
+                    onDragEnd = { r.onEnd() },
+                    onDragCancel = { r.onEnd() },
+                    onDrag = { change, amount -> change.consume(); r.onMove(amount.y) }
+                )
+            },
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            painterResource(R.drawable.ic_drag_handle), "Drag to reorder",
+            tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(32.dp)
+        )
     }
 }
 

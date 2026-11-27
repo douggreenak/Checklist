@@ -287,7 +287,7 @@ function swipeable(card, { right, left, rightLabel, rightIcon }) {
   const end = () => {
     if (!tracking) return;
     tracking = false;
-    const w = wrap.offsetWidth, limit = Math.min(120, w * 0.3);
+    const w = wrap.offsetWidth, limit = w / 3; // must drag a third of the way across
     if (active && dx > limit && right) { reset(); right(); }
     else if (active && dx < -limit && left) { wrap.classList.add('leaving'); setTimeout(left, 240); }
     else reset();
@@ -357,8 +357,64 @@ function taskRow(l, item) {
     h('button', { class: 'check', type: 'button', role: 'checkbox', 'aria-checked': String(item.c), 'aria-label': item.c ? 'Mark not done' : 'Mark done', onclick: toggle },
       h('span', { class: 'box' }, icon('check'))),
     ta,
+    item.c ? null : h('button', { class: 'drag', type: 'button', 'aria-label': 'Drag to reorder', onpointerdown: e => startReorder(e, l, item) }, icon('drag')),
     h('button', { class: 'del', type: 'button', 'aria-label': 'Delete task', onclick: remove }, icon('close')));
-  return swipeable(card, { right: toggle, left: remove, rightLabel: item.c ? 'Not done' : 'Done', rightIcon: item.c ? 'undo' : 'check' });
+  const wrap = swipeable(card, { right: toggle, left: remove, rightLabel: item.c ? 'Not done' : 'Done', rightIcon: item.c ? 'undo' : 'check' });
+  wrap.dataset.uid = item.uid;
+  return wrap;
+}
+
+/* ----- drag to reorder (active tasks); the new order is saved and synced like any other edit ----- */
+function startReorder(e, l, item) {
+  if (e.button > 0) return;
+  e.preventDefault();
+  const handle = e.currentTarget;
+  const wraps = [...document.querySelectorAll('.tasks > .swipe[data-uid]')].filter(w => l.items.some(i => String(i.uid) === w.dataset.uid && !i.c));
+  const from = wraps.findIndex(w => w.dataset.uid === String(item.uid));
+  if (from < 0 || wraps.length < 2) return;
+  const scroller = handle.closest('.main-pane, .lists-panel') || document.scrollingElement;
+  const rects = wraps.map(w => w.getBoundingClientRect());
+  const gap = rects[1].top - rects[0].bottom, size = rects[from].height + gap;
+  const startY = e.clientY, startScroll = scroller.scrollTop;
+  let clientY = startY, raf = 0, to = from;
+  const me = wraps[from];
+  me.classList.add('dragging');
+  wraps.forEach(w => { if (w !== me) w.classList.add('shifting'); });
+  try { handle.setPointerCapture(e.pointerId); } catch { /* ignore */ }
+  const update = () => {
+    const dy = clientY - startY + (scroller.scrollTop - startScroll);
+    me.style.transform = `translateY(${dy}px)`;
+    const center = rects[from].top + rects[from].height / 2 + dy;
+    to = 0;
+    rects.forEach((r, i) => { if (i !== from && r.top + r.height / 2 < center) to++; });
+    wraps.forEach((w, i) => {
+      if (w === me) return;
+      const shift = from < to && i > from && i <= to ? -size : from > to && i >= to && i < from ? size : 0;
+      w.style.transform = shift ? `translateY(${shift}px)` : '';
+    });
+  };
+  const edge = () => {
+    const b = scroller.getBoundingClientRect(), pad = 70;
+    const v = clientY < b.top + pad ? -16 : clientY > b.bottom - pad ? 16 : 0;
+    if (v) { scroller.scrollTop += v; update(); }
+    raf = requestAnimationFrame(edge);
+  };
+  raf = requestAnimationFrame(edge);
+  const move = ev => { if (ev.pointerId === e.pointerId) { clientY = ev.clientY; update(); } };
+  const finish = ev => {
+    if (ev.pointerId !== e.pointerId) return;
+    cancelAnimationFrame(raf);
+    handle.removeEventListener('pointermove', move); handle.removeEventListener('pointerup', finish); handle.removeEventListener('pointercancel', finish);
+    wraps.forEach(w => { w.classList.remove('dragging', 'shifting'); w.style.transform = ''; });
+    if (ev.type === 'pointerup' && to !== from) {
+      const slots = l.items.map((i, k) => i.c ? -1 : k).filter(k => k >= 0);
+      const order = slots.map(k => l.items[k]);
+      order.splice(to, 0, order.splice(from, 1)[0]);
+      slots.forEach((k, n) => { l.items[k] = order[n]; });
+      changed();
+    }
+  };
+  handle.addEventListener('pointermove', move); handle.addEventListener('pointerup', finish); handle.addEventListener('pointercancel', finish);
 }
 
 function openMenu(btn, l) {
@@ -385,6 +441,7 @@ function listView(l) {
     h('div', { class: 'top-row' },
       h('button', { class: 'icon-btn back-btn', type: 'button', 'aria-label': 'Back', onclick: () => go('') }, icon('back')),
       h('span', { class: 'grow' }),
+      h('span', { class: 'total-pill', 'aria-label': 'Total tasks', text: `${l.items.length} ${l.items.length === 1 ? 'task' : 'tasks'}` }),
       h('div', { class: 'menu-wrap' }, more)),
     title,
     h('p', { class: 'label', text: l.items.length ? `${remaining(l)} to do · ${done(l)} done` : 'No tasks' }),
