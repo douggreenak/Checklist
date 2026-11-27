@@ -40,7 +40,9 @@ class ChecklistScreenTest {
         rule.onNodeWithTag("task-row").performTouchInput { swipeRight() }
         rule.waitForIdle()
         assert(list.items[0].checked)
-        rule.onNodeWithText("Completed", substring = true).performClick()
-        rule.onNodeWithText("milk").assertExists()
+        rule.onNodeWithText("Completed", substring = true).assertExists().performClick()
+        rule.waitForIdle()
+        assert(list.showCompleted)
+        rule.onNodeWithTag("task-row").assertExists()
     }
 }
