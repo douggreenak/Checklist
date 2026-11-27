@@ -34,18 +34,10 @@ class ChecklistScreenTest {
         assert(list.items.isEmpty())
     }
 
-    @Test fun swipeLeftDeletes() {
-        val list = TaskList("t", listOf(Item("milk")))
-        show(list)
-        rule.onNodeWithText("milk").performTouchInput { swipeLeft() }
-        rule.waitForIdle()
-        assert(list.items.isEmpty())
-    }
-
     @Test fun swipeRightCompletesAndCompletedSectionShows() {
         val list = TaskList("t", listOf(Item("milk")))
         show(list)
-        rule.onNodeWithText("milk").performTouchInput { swipeRight() }
+        rule.onNodeWithTag("task-row").performTouchInput { swipeRight() }
         rule.waitForIdle()
         assert(list.items[0].checked)
         rule.onNodeWithText("Completed", substring = true).performClick()

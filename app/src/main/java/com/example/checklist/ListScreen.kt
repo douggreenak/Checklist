@@ -12,6 +12,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.zIndex
+import androidx.compose.ui.platform.testTag
 import kotlinx.coroutines.launch
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -252,7 +253,7 @@ internal fun TaskRow(
         rightLabel = if (item.checked) "Not done" else "Done",
         rightIcon = if (item.checked) R.drawable.ic_undo else R.drawable.ic_check,
         onSwipeRight = { item.checked = !item.checked },
-        modifier = modifier
+        modifier = modifier.testTag("task-row")
     ) {
         Surface(
             color = MaterialTheme.colorScheme.surface,
