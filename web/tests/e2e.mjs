@@ -72,6 +72,10 @@ await a.click('.back-btn'); await a.waitForTimeout(200); await a.locator('.list-
 if (await a.locator('.task.done').count() === 0) { await a.click('.completed-head'); await a.waitForTimeout(300); }
 ok((await a.locator('.task.done textarea').evaluateAll(els => els.map(e => e.value))).includes(listTask), 'the same task is checked off inside its own list');
 
+/* 1d. bulk uncheck */
+await a.click('[aria-label="List menu"]'); await a.click('.menu >> text=Uncheck all'); await a.waitForTimeout(400);
+ok(await a.locator('.task.done').count() === 0 && await a.locator('.completed-head').count() === 0, 'Uncheck all in the list menu unchecks every task');
+
 /* 2. list color dialog */
 const before = await a.evaluate(() => getComputedStyle(document.querySelector('.list-view')).getPropertyValue('--primary'));
 await a.click('[aria-label="List menu"]'); await a.click('.menu >> text=Change color');

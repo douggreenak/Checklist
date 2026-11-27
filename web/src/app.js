@@ -328,6 +328,18 @@ function allCard(r) {
 }
 
 /* Every task from every list, grouped by list. These are the same item objects the lists hold. */
+function openAllMenu(btn, all) {
+  document.querySelector('.menu')?.remove();
+  const close = () => { menu.remove(); document.removeEventListener('pointerdown', outside, true); };
+  const outside = e => { if (!menu.contains(e.target) && !btn.contains(e.target)) close(); };
+  const item = (ic, text, fn, off) => h('button', { type: 'button', disabled: off, onclick: () => { close(); fn(); } }, ic, text);
+  const menu = h('div', { class: 'menu', role: 'menu' },
+    item(icon(state.showAllCompleted ? 'visibility_off' : 'visibility'), state.showAllCompleted ? 'Hide completed' : 'Show completed', () => { state.showAllCompleted = !state.showAllCompleted; render(); }),
+    item(icon('undo'), 'Uncheck all', () => { state.lists.forEach(l => l.items.forEach(i => { i.c = false; })); changed(); }, !done(all)));
+  btn.parentElement.append(menu);
+  document.addEventListener('pointerdown', outside, true);
+}
+
 function allView() {
   const all = { items: state.lists.flatMap(l => l.items) };
   const groups = pick => state.lists.map(l => [l, l.items.filter(i => pick(i))]).filter(([, it]) => it.length);
@@ -343,7 +355,8 @@ function allView() {
     h('div', { class: 'top-row' },
       h('button', { class: 'icon-btn back-btn', type: 'button', 'aria-label': 'Back', onclick: () => go('') }, icon('back')),
       h('span', { class: 'grow' }),
-      h('span', { class: 'total-pill', 'aria-label': 'Total tasks', text: `${n} ${n === 1 ? 'task' : 'tasks'}` })),
+      h('span', { class: 'total-pill', 'aria-label': 'Total tasks', text: `${n} ${n === 1 ? 'task' : 'tasks'}` }),
+      h('div', { class: 'menu-wrap' }, h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'List menu', onclick: e => openAllMenu(e.currentTarget, all) }, icon('more')))),
     h('h1', { class: 'display all-title', text: 'All tasks' }),
     h('p', { class: 'label', text: n ? `${n - d} to do · ${d} done` : 'No tasks' }),
     n ? h('div', { class: 'mt14' }, progressBar(all)) : null,
@@ -465,9 +478,10 @@ function openMenu(btn, l) {
   document.querySelector('.menu')?.remove();
   const close = () => { menu.remove(); document.removeEventListener('pointerdown', outside, true); };
   const outside = e => { if (!menu.contains(e.target) && !btn.contains(e.target)) close(); };
-  const item = (ic, text, fn, cls) => h('button', { type: 'button', class: cls || '', onclick: () => { close(); fn(); } }, ic, text);
+  const item = (ic, text, fn, cls) => h('button', { type: 'button', class: cls || '', disabled: cls === 'disabled', onclick: () => { close(); fn(); } }, ic, text);
   const menu = h('div', { class: 'menu', role: 'menu' },
     item(icon(l.showCompleted ? 'visibility_off' : 'visibility'), l.showCompleted ? 'Hide completed' : 'Show completed', () => { l.showCompleted = !l.showCompleted; changed(); }),
+    item(icon('undo'), 'Uncheck all', () => { l.items.forEach(i => { i.c = false; }); changed(); }, done(l) ? '' : 'disabled'),
     item(icon('palette'), 'Change color', () => colorDialog(l)),
     item(icon('trash'), 'Delete list', () => { state.lists = state.lists.filter(x => x !== l); go(''); changed(); }, 'danger'));
   btn.parentElement.append(menu);

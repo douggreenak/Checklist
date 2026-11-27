@@ -44,7 +44,28 @@ fun AllScreen(lists: List<TaskList>, onBack: () -> Unit) {
                     Box(Modifier.clip(CircleShape).background(accent.color.copy(alpha = 0.14f)).padding(horizontal = 16.dp, vertical = 8.dp)) {
                         Text("$total ${if (total == 1) "task" else "tasks"}", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = accent.color)
                     }
-                    Spacer(Modifier.width(8.dp))
+                    Spacer(Modifier.width(4.dp))
+                    var menu by remember { mutableStateOf(false) }
+                    Box {
+                        IconButton(onClick = { menu = true }, modifier = Modifier.size(64.dp)) {
+                            Icon(painterResource(R.drawable.ic_more_vert), "Menu", tint = accent.color, modifier = Modifier.size(30.dp))
+                        }
+                        DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
+                            DropdownMenuItem(
+                                text = { Text(if (showCompleted) "Hide completed" else "Show completed", fontSize = 19.sp) },
+                                leadingIcon = { Icon(painterResource(if (showCompleted) R.drawable.ic_visibility_off else R.drawable.ic_visibility), null) },
+                                onClick = { showCompleted = !showCompleted; menu = false },
+                                modifier = Modifier.heightIn(min = 64.dp)
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Uncheck all", fontSize = 19.sp) },
+                                leadingIcon = { Icon(painterResource(R.drawable.ic_undo), null) },
+                                enabled = done > 0,
+                                onClick = { lists.forEach { l -> l.items.forEach { it.checked = false } }; menu = false },
+                                modifier = Modifier.heightIn(min = 64.dp)
+                            )
+                        }
+                    }
                 }
                 Text("All tasks", fontSize = 36.sp, fontWeight = FontWeight.Bold, color = accent.color, modifier = Modifier.padding(horizontal = 16.dp))
                 Text(

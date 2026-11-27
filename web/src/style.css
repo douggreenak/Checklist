@@ -234,3 +234,4 @@ dialog .swatch { width:68px; height:68px; }
 .group-head .dot { width:14px; height:14px; border-radius:50%; background:var(--primary); }
 .all-card .avatar { display:grid; place-items:center; }
 .all-card .avatar svg { width:30px; height:30px; }
+.menu button:disabled { opacity:.4; }

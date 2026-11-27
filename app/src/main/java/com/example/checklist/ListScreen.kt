@@ -199,6 +199,13 @@ private fun ListTopBar(list: TaskList, accent: Accent, onBack: () -> Unit, onDel
                         modifier = Modifier.heightIn(min = 64.dp)
                     )
                     DropdownMenuItem(
+                        text = { Text("Uncheck all", fontSize = 19.sp) },
+                        leadingIcon = { Icon(painterResource(R.drawable.ic_undo), null) },
+                        enabled = list.done > 0,
+                        onClick = { list.items.forEach { it.checked = false }; menu = false },
+                        modifier = Modifier.heightIn(min = 64.dp)
+                    )
+                    DropdownMenuItem(
                         text = { Text("Change color", fontSize = 19.sp) },
                         leadingIcon = { Icon(painterResource(R.drawable.ic_palette), null, tint = accent.color) },
                         onClick = { menu = false; onChangeColor() },
