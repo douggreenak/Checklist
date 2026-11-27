@@ -62,7 +62,7 @@ object Store {
             TaskList(
                 name = o.getString("name"),
                 showCompleted = o.optBoolean("showCompleted"),
-                color = if (o.has("argb")) o.getInt("argb") else Palette[o.optInt("color", i).mod(Palette.size)],
+                color = dePurple(if (o.has("argb")) o.getInt("argb") else Palette[o.optInt("color", i).mod(Palette.size)]),
                 id = o.getString("id"),
                 items = (0 until ia.length()).map {
                     val x = ia.getJSONObject(it)
@@ -87,7 +87,7 @@ object Store {
 
     fun parseSettings(json: String): Settings {
         val o = JSONObject(json)
-        return Settings(o.optInt("mode", 0), o.optInt("color", Palette[0]), o.optBoolean("black"))
+        return Settings(o.optInt("mode", 0), dePurple(o.optInt("color", Palette[0])), o.optBoolean("black"))
     }
 
     fun loadSettings(prefs: SharedPreferences): Settings =

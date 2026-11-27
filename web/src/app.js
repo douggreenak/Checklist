@@ -2,8 +2,22 @@ import { ICONS } from './icons.js';
 import { SchemeVibrant, SchemeTonalSpot, Hct, MaterialDynamicColors as D } from '@material/material-color-utilities';
 
 /* ================= constants ================= */
-const PALETTE = [0xFF6C4DD6, 0xFF1E7BE0, 0xFF00897B, 0xFF3FA34D, 0xFFE8710A, 0xFFD81B60,
-  0xFFE53935, 0xFF8E24AA, 0xFF00ACC1, 0xFF7CB342, 0xFFFDD835, 0xFF546E7A].map(n => n | 0);
+const PALETTE = [0xFF1E7BE0, 0xFF00897B, 0xFF3FA34D, 0xFFE8710A, 0xFFD81B60, 0xFFE53935,
+  0xFF00ACC1, 0xFF7CB342, 0xFFFDD835, 0xFF546E7A, 0xFF6D4C41, 0xFF827717].map(n => n | 0);
+
+/* Purple is not used anywhere in the app: hues from 245 to 325 degrees are skipped. */
+const PURPLE_FROM = 245, PURPLE_TO = 325, SLIDER_MAX = 360 - (PURPLE_TO - PURPLE_FROM);
+const sliderToHue = s => (s < PURPLE_FROM ? s : s + (PURPLE_TO - PURPLE_FROM));
+const hueToSlider = h => (h < PURPLE_FROM ? h : h >= PURPLE_TO ? h - (PURPLE_TO - PURPLE_FROM) : PURPLE_FROM);
+function isPurple(argb) {
+  const r = (argb >> 16) & 255, g = (argb >> 8) & 255, b = argb & 255, mx = Math.max(r, g, b), mn = Math.min(r, g, b);
+  if (!mx || (mx - mn) / mx < 0.15) return false;     // greys are fine
+  const hh = mx === r ? ((g - b) / (mx - mn)) % 6 : mx === g ? (b - r) / (mx - mn) + 2 : (r - g) / (mx - mn) + 4;
+  const hue = ((hh * 60) + 360) % 360;
+  return hue >= PURPLE_FROM && hue <= PURPLE_TO;
+}
+/** Colors saved by older versions that were purple become the default blue. */
+const dePurple = argb => (isPurple(argb) ? PALETTE[0] : argb);
 
 const ALIAS = { back: 'arrow_back', more: 'more_vert', expand: 'keyboard_arrow_down', trash: 'delete' };
 
@@ -43,7 +57,7 @@ const uid = () => nextUid++;
 
 const state = {
   token: LS.get('cl.token', null),
-  settings: { mode: 0, color: PALETTE[0], black: false, ...LS.get('cl.settings', {}) },
+  settings: (() => { const s = { mode: 0, color: PALETTE[0], black: false, ...LS.get('cl.settings', {}) }; s.color = dePurple(s.color | 0); return s; })(),
   lists: [],
   focusId: null,
   showAllCompleted: false,
@@ -57,7 +71,7 @@ function parseLists(json) {
     id: String(l.id),
     name: l.name ?? '',
     showCompleted: !!l.showCompleted,
-    argb: Number.isInteger(l.argb) ? l.argb : PALETTE[0],
+    argb: Number.isInteger(l.argb) ? dePurple(l.argb) : PALETTE[0],
     items: (l.items || []).map(i => ({ uid: uid(), i: i.i ? String(i.i) : newId(), t: String(i.t ?? ''), c: !!i.c })),
   }));
 }
@@ -220,7 +234,7 @@ function applyDoc(doc) {
   state.lists = doc.filter(l => !l.dead).map(d => {
     const l = oldLists.get(String(d.id)) || { id: String(d.id), items: [] };
     l.name = d.name ?? ''; l.showCompleted = !!d.showCompleted;
-    l.argb = Number.isInteger(d.argb) && d.argb !== 0 ? d.argb : PALETTE[0];
+    l.argb = Number.isInteger(d.argb) && d.argb !== 0 ? dePurple(d.argb) : PALETTE[0];
     const oldItems = new Map(l.items.map(i => [i.i, i]));
     const items = (d.items || []).map(x => {
       const it = oldItems.get(x.i) || { uid: uid(), i: x.i };
@@ -614,8 +628,9 @@ function argbFromHue(hue) {
 function colorPicker(getColor, setColor) {
   const box = h('div', {});
   const swatches = h('div', { class: 'swatches' });
-  const slider = h('input', { class: 'hue', type: 'range', min: 0, max: 360, 'aria-label': 'Custom color hue',
-    oninput: e => { setColor(argbFromHue(+e.target.value)); paint(false); } });
+  const slider = h('input', { class: 'hue', type: 'range', min: 0, max: SLIDER_MAX, 'aria-label': 'Custom color hue',
+    oninput: e => { setColor(argbFromHue(sliderToHue(+e.target.value))); paint(false); } });
+  slider.style.background = 'linear-gradient(90deg,' + Array.from({ length: 15 }, (_, k) => `hsl(${Math.round(sliderToHue(k * SLIDER_MAX / 14))} 70% 55%)`).join(',') + ')';
   function paint(updateSlider = true) {
     const cur = getColor();
     swatches.replaceChildren(...PALETTE.map(c => {
@@ -624,7 +639,7 @@ function colorPicker(getColor, setColor) {
       b.style.color = (((c >> 16) & 255) * 0.299 + ((c >> 8) & 255) * 0.587 + (c & 255) * 0.114) > 160 ? '#000' : '#fff';
       return b;
     }));
-    if (updateSlider) slider.value = hueOf(cur);
+    if (updateSlider) slider.value = hueToSlider(hueOf(cur));
   }
   box.append(swatches, h('p', { class: 'label hue-label', text: 'Custom color' }), slider);
   paint();

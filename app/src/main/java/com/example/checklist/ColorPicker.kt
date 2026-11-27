@@ -49,14 +49,14 @@ fun ColorPicker(selected: Int, onSelect: (Int) -> Unit, modifier: Modifier = Mod
         Box(Modifier.fillMaxWidth().height(64.dp), contentAlignment = Alignment.Center) {
             Box(
                 Modifier.fillMaxWidth().height(18.dp).clip(RoundedCornerShape(9.dp)).background(
-                    Brush.horizontalGradient((0..360 step 30).map {
-                        Color(android.graphics.Color.HSVToColor(floatArrayOf(it.toFloat(), 0.75f, 0.85f)))
+                    Brush.horizontalGradient((0..SLIDER_MAX.toInt() step 20).map {
+                        Color(android.graphics.Color.HSVToColor(floatArrayOf(sliderToHue(it.toFloat()), 0.75f, 0.85f)))
                     })
                 )
             )
             Slider(
-                value = hsv[0], valueRange = 0f..360f,
-                onValueChange = { onSelect(android.graphics.Color.HSVToColor(floatArrayOf(it, 0.75f, 0.85f))) },
+                value = hueToSlider(hsv[0]), valueRange = 0f..SLIDER_MAX,
+                onValueChange = { onSelect(android.graphics.Color.HSVToColor(floatArrayOf(sliderToHue(it), 0.75f, 0.85f))) },
                 colors = SliderDefaults.colors(
                     thumbColor = Color(selected),
                     activeTrackColor = Color.Transparent, inactiveTrackColor = Color.Transparent

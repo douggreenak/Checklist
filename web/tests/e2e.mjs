@@ -101,7 +101,7 @@ await C1.ctx.close(); await C2.ctx.close();
 const before = await a.evaluate(() => getComputedStyle(document.querySelector('.list-view')).getPropertyValue('--primary'));
 await a.click('[aria-label="List menu"]'); await a.click('.menu >> text=Change color');
 await a.waitForSelector('dialog[open]');
-await a.locator('dialog .swatch').nth(3).click(); await a.waitForTimeout(200);
+await a.locator('dialog .swatch').nth(2).click(); await a.waitForTimeout(200);
 await a.click('dialog >> text=Done'); await a.waitForTimeout(900);
 const after = await a.evaluate(() => getComputedStyle(document.querySelector('.list-view')).getPropertyValue('--primary'));
 ok(before !== after, `list color changes the list theme (${before} -> ${after})`);

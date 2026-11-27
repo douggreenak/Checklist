@@ -123,7 +123,7 @@ object Doc {
             val l = oldLists[d.id] ?: TaskList(id = d.id)
             if (l.name != d.name) l.name = d.name
             if (l.showCompleted != d.showCompleted) l.showCompleted = d.showCompleted
-            val color = if (d.argb != 0) d.argb else Palette[0]
+            val color = if (d.argb != 0) dePurple(d.argb) else Palette[0]
             if (l.color != color) l.color = color
             val oldItems = l.items.associateBy { it.sid }
             val items = d.items.map { x ->
