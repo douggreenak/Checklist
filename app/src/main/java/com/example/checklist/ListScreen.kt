@@ -179,7 +179,7 @@ private fun TaskRow(
             border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
         ) {
             Row(
-                Modifier.fillMaxWidth().heightIn(min = 92.dp).height(IntrinsicSize.Min).padding(start = 4.dp, end = 8.dp),
+                Modifier.fillMaxWidth().heightIn(min = 100.dp).height(IntrinsicSize.Min).padding(start = 4.dp, end = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 CheckCircle(item.checked, accent) { item.checked = !item.checked }
@@ -196,16 +196,16 @@ private fun TaskRow(
 @Composable
 private fun CheckCircle(checked: Boolean, accent: Accent, onClick: () -> Unit) {
     Box(
-        Modifier.width(88.dp).fillMaxHeight().clip(RoundedCornerShape(28.dp)).clickable(role = Role.Checkbox, onClick = onClick),
+        Modifier.width(104.dp).fillMaxHeight().clip(RoundedCornerShape(28.dp)).clickable(role = Role.Checkbox, onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
         Box(
-            Modifier.size(46.dp).clip(CircleShape)
+            Modifier.size(54.dp).clip(CircleShape)
                 .background(if (checked) accent.color else Color.Transparent)
-                .border(3.dp, accent.color, CircleShape),
+                .border(3.5.dp, accent.color, CircleShape),
             contentAlignment = Alignment.Center
         ) {
-            if (checked) Icon(painterResource(R.drawable.ic_check), "Done", tint = accent.on, modifier = Modifier.size(32.dp))
+            if (checked) Icon(painterResource(R.drawable.ic_check), "Done", tint = accent.on, modifier = Modifier.size(38.dp))
         }
     }
 }
