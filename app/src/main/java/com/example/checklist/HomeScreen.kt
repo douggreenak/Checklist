@@ -105,9 +105,7 @@ fun HomeScreen(
             }
             if (lists.isEmpty()) item { EmptyState(R.drawable.ic_checklist, "No lists yet", "Tap “New list” to make your first one.") }
             items(lists, key = { it.id }) { list ->
-                SwipeRow(rightLabel = null, onSwipeRight = {}, onSwipeLeft = { onDelete(list) }, modifier = Modifier.animateItem()) {
-                    ListCard(list) { onOpen(list) }
-                }
+                Box(Modifier.animateItem()) { ListCard(list) { onOpen(list) } }
             }
         }
     }

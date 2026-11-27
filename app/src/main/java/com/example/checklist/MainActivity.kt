@@ -10,7 +10,6 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.IOException
@@ -29,7 +28,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             LaunchedEffect(Unit) { snapshotFlow { Store.toJson(lists) }.collect { Store.save(prefs, it) } }
             LaunchedEffect(Unit) { snapshotFlow { Store.settingsToJson(settings) }.collect { Store.saveSettings(prefs, it) } }
-            SyncEffect(session, lists)
+            SyncEffect(session, lists, prefs, this@MainActivity)
 
             var openId by rememberSaveable { mutableStateOf<String?>(null) }
             var inSettings by rememberSaveable { mutableStateOf(false) }
@@ -119,77 +118,64 @@ class MainActivity : ComponentActivity() {
 }
 
 /**
- * Keeps [lists] in sync with the server while signed in: pulls on sign-in and every 20 seconds,
- * and pushes shortly after each local change. If both sides changed, the most recent save wins.
+ * Live sync while signed in. Changes go to the server about half a second after you stop typing; the server merges them with
+ * other people's changes (field by field, newest wins) and sends back the combined lists. Every couple of seconds we also ask
+ * whether anything changed, so two people see each other's check-offs almost immediately. Only runs while the app is on screen.
  */
 @Composable
-private fun SyncEffect(session: Session, lists: MutableList<TaskList>) {
+private fun SyncEffect(session: Session, lists: MutableList<TaskList>, prefs: android.content.SharedPreferences, activity: ComponentActivity) {
     LaunchedEffect(session.token) {
         val token = session.token ?: return@LaunchedEffect
         val api = try { Api(session.server) } catch (e: IllegalArgumentException) { session.signOut(); return@LaunchedEffect }
-        var synced: String? = null // what the server is known to hold, in local format
+        var prev: List<DList>? = Doc.loadPrev(prefs)   // last document the server confirmed; null on a brand-new sign-in
+        var knownRev = -1L
+        var lastSig: String? = null
 
-        fun dirty() = synced == null || Store.toJson(lists) != synced
-
-        suspend fun guard(block: suspend () -> Unit) {
-            try {
-                block()
-                session.status = "Synced"
-            } catch (e: ApiException) {
-                if (e.code == 401) session.signOut() else session.status = e.message ?: "Sync problem"
-            } catch (e: IOException) {
-                session.status = "Offline – will retry"
+        suspend fun syncOnce() {
+            if (prev == null) {
+                // First time on this device: take what the server has (upgrading old data), never overwrite it.
+                val r = withContext(Dispatchers.IO) { api.fetch(token) }
+                if (r.doc != null) {
+                    val d = Doc.parse(r.doc)
+                    Doc.apply(d, lists); prev = d; knownRev = r.rev; Doc.savePrev(prefs, d)
+                } else prev = emptyList()
             }
-        }
-
-        suspend fun pull() {
-            val remote = withContext(Dispatchers.IO) { api.fetch(token) }
-            if (remote.json == null) {
-                val json = Store.toJson(lists)
-                withContext(Dispatchers.IO) { api.push(token, json) }
-                synced = json
-            } else if (!dirty() || synced == null) {
-                val parsed = Store.parse(remote.json)
-                if (!dirty() || synced == null) { // nothing changed locally while we were waiting
-                    if (Store.toJson(parsed) != Store.toJson(lists)) { lists.clear(); lists.addAll(parsed) }
-                    synced = Store.toJson(lists)
-                }
+            val sent = Doc.build(prev!!, lists, System.currentTimeMillis())
+            val sig = Doc.signature(lists)
+            val r = withContext(Dispatchers.IO) { api.sync(token, Doc.toJson(sent)) }
+            val merged = Doc.parse(r.doc!!)
+            if (Doc.signature(lists) == sig) {
+                Doc.apply(merged, lists); prev = merged; lastSig = Doc.signature(lists)
+            } else {
+                prev = sent                          // edited while waiting: the next round sends those too
             }
+            knownRev = r.rev
+            Doc.savePrev(prefs, prev!!)
         }
 
         session.status = "Syncing…"
-        guard { pull() }
-
-        launch {
-            while (true) {
-                delay(20_000)
-                if (session.token == null) return@launch
-                if (synced == null || !dirty()) guard { pull() } else guard { push(api, token, lists)?.let { synced = it } }
-            }
-        }
-
-        snapshotFlow { Store.toJson(lists) }.collectLatest { json ->
-            // Never push before a successful first pull, or we could overwrite newer data on the server.
-            if (synced == null || json == synced) return@collectLatest
-            delay(800)
-            while (true) {
-                try {
-                    withContext(Dispatchers.IO) { api.push(token, json) }
-                    synced = json; session.status = "Synced"; return@collectLatest
-                } catch (e: ApiException) {
-                    if (e.code == 401) session.signOut() else session.status = e.message ?: "Sync problem"
-                    return@collectLatest
-                } catch (e: IOException) {
-                    session.status = "Offline – will retry"
-                    delay(15_000)
-                }
+        var tickSig = ""
+        var tick = 0
+        while (true) {
+            delay(400)
+            tick++
+            if (session.token == null) return@LaunchedEffect
+            if (!activity.lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.STARTED)) continue
+            val sig = Doc.signature(lists)
+            val stable = sig == tickSig
+            tickSig = sig
+            try {
+                var go = prev == null || (sig != lastSig && stable)
+                if (!go && tick % 5 == 0) go = withContext(Dispatchers.IO) { api.rev(token) } != knownRev
+                if (go) { syncOnce(); session.status = "Synced" }
+            } catch (e: ApiException) {
+                if (e.code == 401) { session.signOut(); return@LaunchedEffect }
+                session.status = e.message ?: "Sync problem"
+                delay(5_000)
+            } catch (e: IOException) {
+                session.status = "Offline – will retry"
+                delay(5_000)
             }
         }
     }
-}
-
-private suspend fun push(api: Api, token: String, lists: List<TaskList>): String? {
-    val json = Store.toJson(lists)
-    withContext(Dispatchers.IO) { api.push(token, json) }
-    return json
 }

@@ -252,7 +252,6 @@ internal fun TaskRow(
         rightLabel = if (item.checked) "Not done" else "Done",
         rightIcon = if (item.checked) R.drawable.ic_undo else R.drawable.ic_check,
         onSwipeRight = { item.checked = !item.checked },
-        onSwipeLeft = { list.items.remove(item) },
         modifier = modifier
     ) {
         Surface(

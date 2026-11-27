@@ -27,21 +27,18 @@ import kotlin.math.roundToInt
 const val SWIPE_FRACTION = 1f / 3f
 
 /**
- * Swipe right runs [onSwipeRight] and the row snaps back (the item usually moves elsewhere).
- * Swipe left runs [onSwipeLeft] (delete) with no confirmation.
- * Either only fires when the finger is released at least a third of the way across, however fast the flick.
+ * Swipe right runs [onSwipeRight] and the row snaps back (the item usually moves elsewhere). There is no swipe-to-delete.
+ * It only fires when the finger is released at least a third of the way across, however fast the flick.
  */
 @Composable
 fun SwipeRow(
     rightLabel: String?,
     onSwipeRight: () -> Unit,
-    onSwipeLeft: () -> Unit,
     modifier: Modifier = Modifier,
     @androidx.annotation.DrawableRes rightIcon: Int = R.drawable.ic_check,
     content: @Composable () -> Unit
 ) {
     val right by rememberUpdatedState(onSwipeRight)
-    val left by rememberUpdatedState(onSwipeLeft)
     val offset = remember { Animatable(0f) }
     var width by remember { mutableFloatStateOf(1f) }
     val scope = rememberCoroutineScope()
@@ -60,9 +57,6 @@ fun SwipeRow(
                             if (end >= width * SWIPE_FRACTION && canRight) {
                                 right()
                                 offset.animateTo(0f)
-                            } else if (end <= -width * SWIPE_FRACTION) {
-                                offset.animateTo(-width)
-                                left()
                             } else offset.animateTo(0f)
                         }
                     },
@@ -70,29 +64,22 @@ fun SwipeRow(
                     onHorizontalDrag = { change, delta ->
                         change.consume()
                         val next = offset.value + delta
-                        scope.launch { offset.snapTo(if (canRight) next else next.coerceAtMost(0f)) }
+                        scope.launch { offset.snapTo(if (canRight) next.coerceAtLeast(0f) else 0f) }
                     }
                 )
             }
     ) {
         if (x != 0f) {
-            val toRight = x > 0
             Row(
                 Modifier.matchParentSize()
-                    .background((if (toRight) DoneGreen else DeleteRed).copy(alpha = if (armed) 1f else 0.55f))
+                    .background(DoneGreen.copy(alpha = if (armed) 1f else 0.55f))
                     .padding(horizontal = 24.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = if (toRight) Arrangement.Start else Arrangement.End
+                horizontalArrangement = Arrangement.Start
             ) {
-                if (toRight) {
-                    Icon(painterResource(rightIcon), null, tint = Color.White, modifier = Modifier.size(28.dp))
-                    Spacer(Modifier.width(10.dp))
-                    Text(rightLabel ?: "", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
-                } else {
-                    Text("Delete", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
-                    Spacer(Modifier.width(10.dp))
-                    Icon(painterResource(R.drawable.ic_delete), null, tint = Color.White, modifier = Modifier.size(28.dp))
-                }
+                Icon(painterResource(rightIcon), null, tint = Color.White, modifier = Modifier.size(28.dp))
+                Spacer(Modifier.width(10.dp))
+                Text(rightLabel ?: "", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
             }
         }
         Box(Modifier.offset { IntOffset(offset.value.roundToInt(), 0) }) { content() }

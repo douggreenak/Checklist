@@ -36,8 +36,11 @@ await a.waitForTimeout(200);
 ok(await a.locator('.task').count() === 3, 'three tasks created with Add task + typing');
 await swipe(a, '.task >> nth=0', 260);
 ok(await a.locator('.task').count() === 2 && await a.locator('.completed-head .badge').textContent() === '1', 'swipe right completes a task (moves to Completed 1)');
+const nLeft = await a.locator('.task').count();
 await swipe(a, '.task >> nth=0', -260);
-ok(await a.locator('.task').count() === 1, 'swipe left deletes a task immediately');
+ok(await a.locator('.task').count() === nLeft, 'swiping left no longer deletes (delete is the ✕ button only)');
+await a.locator('.task .del >> nth=0').click(); await a.waitForTimeout(300);
+ok(await a.locator('.task').count() === nLeft - 1, 'the ✕ button deletes a task immediately');
 await a.click('.completed-head'); await a.waitForTimeout(300);
 ok(await a.locator('.task.done').count() === 1, 'Completed section expands to show the finished task');
 await swipe(a, '.task.done >> nth=0', 260);
@@ -76,6 +79,24 @@ ok((await a.locator('.task.done textarea').evaluateAll(els => els.map(e => e.val
 await a.click('[aria-label="List menu"]'); await a.click('.menu >> text=Uncheck all'); await a.waitForTimeout(400);
 ok(await a.locator('.task.done').count() === 0 && await a.locator('.completed-head').count() === 0, 'Uncheck all in the list menu unchecks every task');
 
+/* 1e. two people on the same list, live */
+const C1 = await open(), C2 = await open(); const c1 = C1.p, c2 = C2.p;
+await login(c1); await login(c2);
+await c1.click('.list-card:not(.all-card)'); await c2.click('.list-card:not(.all-card)'); await c1.waitForTimeout(300);
+for (const p of [c1, c2]) { await p.click('.fab:has-text("Add task")'); await p.keyboard.type(p === c1 ? 'from-one' : 'from-two'); }
+await c1.waitForTimeout(3500);
+const names = async p => p.locator('.task textarea').evaluateAll(els => els.map(e => e.value));
+ok((await names(c1)).includes('from-two') && (await names(c2)).includes('from-one'), 'tasks added at the same time on two devices both end up on both');
+await c1.locator('.task:has(textarea) >> nth=0').locator('.check').click();
+await c2.locator('.task:has(textarea) >> nth=1').locator('.check').click();
+await c1.waitForTimeout(3500);
+const doneCount = async p => p.locator('.completed-head .badge').textContent().catch(() => '0');
+ok(await doneCount(c1) === await doneCount(c2) && Number(await doneCount(c1)) >= 2, 'check-offs made on two devices at once show up on both within a few seconds');
+const n1 = (await names(c1)).length;
+await c1.locator('.task .del >> nth=0').click(); await c1.waitForTimeout(3500);
+ok((await names(c2)).length === n1 - 1 && (await names(c1)).length === n1 - 1, 'a deletion on one device reaches the other');
+await C1.ctx.close(); await C2.ctx.close();
+
 /* 2. list color dialog */
 const before = await a.evaluate(() => getComputedStyle(document.querySelector('.list-view')).getPropertyValue('--primary'));
 await a.click('[aria-label="List menu"]'); await a.click('.menu >> text=Change color');
@@ -86,7 +107,7 @@ const after = await a.evaluate(() => getComputedStyle(document.querySelector('.l
 ok(before !== after, `list color changes the list theme (${before} -> ${after})`);
 const sl = await serverLists(a);
 ok(sl && sl[0].argb === (0xFF3FA34D | 0), 'list color saved to server as signed ARGB int (same format as the Android app): ' + (sl && sl[0].argb));
-ok(sl && sl[0].items.length === 2 && 't' in sl[0].items[0] && 'c' in sl[0].items[0], 'task format {t,c} matches the Android app');
+ok(sl && sl[0].items.length >= 2 && 't' in sl[0].items[0] && 'c' in sl[0].items[0], 'task format {t,c} matches the Android app');
 
 /* 3. theme settings */
 await a.click('.back-btn'); await a.click('[aria-label=Settings]'); await a.waitForSelector('.seg');

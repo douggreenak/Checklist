@@ -9,7 +9,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.util.UUID
 
-class Item(text: String = "", checked: Boolean = false, val id: Long = nextId++) {
+class Item(text: String = "", checked: Boolean = false, val id: Long = nextId++, val sid: String = UUID.randomUUID().toString()) {
     var text by mutableStateOf(text)
     var checked by mutableStateOf(checked)
 
@@ -49,7 +49,7 @@ object Store {
             arr.put(JSONObject()
                 .put("id", l.id).put("name", l.name).put("showCompleted", l.showCompleted).put("argb", l.color)
                 .put("items", JSONArray().also { ia ->
-                    l.items.forEach { ia.put(JSONObject().put("t", it.text).put("c", it.checked)) }
+                    l.items.forEach { ia.put(JSONObject().put("i", it.sid).put("t", it.text).put("c", it.checked)) }
                 }))
         }
     }.toString()
@@ -64,7 +64,10 @@ object Store {
                 showCompleted = o.optBoolean("showCompleted"),
                 color = if (o.has("argb")) o.getInt("argb") else Palette[o.optInt("color", i).mod(Palette.size)],
                 id = o.getString("id"),
-                items = (0 until ia.length()).map { Item(ia.getJSONObject(it).getString("t"), ia.getJSONObject(it).getBoolean("c")) }
+                items = (0 until ia.length()).map {
+                    val x = ia.getJSONObject(it)
+                    Item(x.getString("t"), x.getBoolean("c"), sid = x.optString("i").ifBlank { UUID.randomUUID().toString() })
+                }
             )
         }
     }

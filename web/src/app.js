@@ -51,19 +51,20 @@ const state = {
   pwOpen: false,
 };
 
+const newId = () => (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2));
 function parseLists(json) {
   return JSON.parse(json).map(l => ({
     id: String(l.id),
     name: l.name ?? '',
     showCompleted: !!l.showCompleted,
     argb: Number.isInteger(l.argb) ? l.argb : PALETTE[0],
-    items: (l.items || []).map(i => ({ uid: uid(), t: String(i.t ?? ''), c: !!i.c })),
+    items: (l.items || []).map(i => ({ uid: uid(), i: i.i ? String(i.i) : newId(), t: String(i.t ?? ''), c: !!i.c })),
   }));
 }
 function serialize() {
   return JSON.stringify(state.lists.map(l => ({
     id: l.id, name: l.name, showCompleted: l.showCompleted, argb: l.argb,
-    items: l.items.map(i => ({ t: i.t, c: i.c })),
+    items: l.items.map(i => ({ i: i.i, t: i.t, c: i.c })),
   })));
 }
 function loadCache() {
@@ -134,9 +135,16 @@ async function api(action, body, token) {
   return data;
 }
 
-let synced = null;        // what the server is known to hold (serialized)
-let pushTimer = null, pollTimer = null, syncRunning = false;
+/*
+ * Live sync. Each change is sent to the server within a moment; the server merges it with what other people did
+ * (field by field, newest change wins) and sends back the combined list. We also ask the server every couple of
+ * seconds whether anything changed, so two people see each other's check-offs almost immediately.
+ */
+let prevDoc = LS.get('cl.doc', null);   // the last document the server confirmed (with change times); null until the first sync
+let knownRev = null;
+let pushTimer = null, pollTimer = null, syncRunning = false, syncAgain = false;
 
+const signature = () => serialize();
 function saveLocal() { LS.set('cl.lists', serialize()); }
 function edited() { saveLocal(); schedulePush(); }
 function changed() { edited(); render(); }
@@ -152,61 +160,135 @@ function authFailed(e) {
   return false;
 }
 
-async function pull() {
-  const r = await api('get', null, state.token);
-  if (r.json == null) {
-    const json = serialize();
-    await api('save', { json }, state.token);
-    synced = json;
-  } else if (synced === null || serialize() === synced) {
-    const before = serialize();
-    state.lists = parseLists(r.json);
-    synced = serialize();
-    if (synced !== before) { saveLocal(); render(); }
+/** Turns what is on screen into a document, stamping only the fields that changed since [prevDoc] with the current time. */
+function buildDoc() {
+  const now = Date.now();
+  const prev = new Map((prevDoc || []).map(l => [l.id, l]));
+  const doc = [];
+  for (const l of state.lists) {
+    const p = prev.get(l.id);
+    const pItems = new Map((p?.items || []).map(i => [i.i, i]));
+    const del = { ...(p?.del || {}) };
+    const cand = l.items.map(it => { it.i = it.i || newId(); return { it, p: pItems.get(it.i) }; });
+    for (const id of pItems.keys()) if (!l.items.some(it => it.i === id)) del[id] = del[id] || now;
+    // The longest run of tasks still in order keeps its position keys; moved or new tasks get one between their neighbours.
+    const po = cand.map(c => (c.p ? c.p.o : null));
+    const best = po.map(() => 0), from = po.map(() => -1);
+    let end = -1;
+    for (let x = 0; x < po.length; x++) {
+      if (po[x] === null) continue;
+      best[x] = 1;
+      for (let y = 0; y < x; y++) if (po[y] !== null && po[y] < po[x] && best[y] + 1 > best[x]) { best[x] = best[y] + 1; from[x] = y; }
+      if (end < 0 || best[x] > best[end]) end = x;
+    }
+    const os = po.map(() => null);
+    for (let c = end; c >= 0; c = from[c]) os[c] = po[c];
+    for (let k = 0; k < os.length; k++) {
+      if (os[k] !== null) continue;
+      let lo = -Infinity, hi = Infinity, from = k;
+      for (let j = k - 1; j >= 0; j--) if (os[j] !== null) { lo = os[j]; break; }
+      let to = k;
+      while (to < os.length && os[to] === null) to++;
+      if (to < os.length) hi = os[to];
+      const run = to - from;
+      for (let j = 0; j < run; j++) {
+        os[from + j] = lo === -Infinity && hi === Infinity ? from + j : lo === -Infinity ? hi - (run - j) : hi === Infinity ? lo + j + 1 : lo + (hi - lo) * (j + 1) / (run + 1);
+      }
+      k = to - 1;
+    }
+    doc.push({
+      id: l.id, name: l.name, showCompleted: l.showCompleted, argb: l.argb, dead: 0, del,
+      lu: p && p.name === l.name && p.showCompleted === l.showCompleted && p.argb === l.argb ? p.lu : now,
+      items: cand.map((c, k) => ({
+        i: c.it.i,
+        t: c.it.t, tu: c.p && c.p.t === c.it.t ? c.p.tu : now,
+        c: c.it.c, cu: c.p && c.p.c === c.it.c ? c.p.cu : now,
+        o: os[k], ou: c.p && c.p.o === os[k] ? c.p.ou : now,
+      })),
+    });
+  }
+  for (const p of prev.values()) {
+    if (!state.lists.some(l => l.id === p.id)) doc.push(p.dead ? p : { id: p.id, name: '', showCompleted: false, argb: 0, lu: 0, dead: now, del: {}, items: [] });
+  }
+  return doc;
+}
+
+/** Shows a server document on screen. Existing list and task objects are updated in place, because the page's handlers hold them. */
+function applyDoc(doc) {
+  const oldLists = new Map(state.lists.map(l => [l.id, l]));
+  state.lists = doc.filter(l => !l.dead).map(d => {
+    const l = oldLists.get(String(d.id)) || { id: String(d.id), items: [] };
+    l.name = d.name ?? ''; l.showCompleted = !!d.showCompleted;
+    l.argb = Number.isInteger(d.argb) && d.argb !== 0 ? d.argb : PALETTE[0];
+    const oldItems = new Map(l.items.map(i => [i.i, i]));
+    const items = (d.items || []).map(x => {
+      const it = oldItems.get(x.i) || { uid: uid(), i: x.i };
+      it.t = String(x.t ?? ''); it.c = !!x.c;
+      return it;
+    });
+    l.items.splice(0, l.items.length, ...items);
+    return l;
+  });
+}
+
+async function syncNow() {
+  if (!state.token) return;
+  if (syncRunning) { syncAgain = true; return; }
+  syncRunning = true;
+  try {
+    if (prevDoc === null) {
+      // First time on this device: take what the server has (upgrading old data), never overwrite it.
+      const r = await api('get', null, state.token);
+      if (r.doc) {
+        const before = signature();
+        applyDoc(r.doc); prevDoc = r.doc; knownRev = r.rev; LS.set('cl.doc', prevDoc);
+        if (signature() !== before) { saveLocal(); render(); }
+      } else prevDoc = [];
+    }
+    if (prevDoc !== null) {
+      const sent = buildDoc(), sig = signature();
+      const r = await api('sync', { doc: sent }, state.token);
+      if (signature() === sig) {
+        const before = sig;
+        applyDoc(r.doc); prevDoc = r.doc;
+        if (signature() !== before) { saveLocal(); render(); }
+      } else { prevDoc = sent; syncAgain = true; }   // edited while waiting: the next round sends those too
+      knownRev = r.rev; LS.set('cl.doc', prevDoc);
+    }
+    setStatus('Synced');
+  } catch (e) { if (!authFailed(e)) setStatus(e.code === 0 ? 'Offline – will retry' : e.message); }
+  finally {
+    syncRunning = false;
+    if (syncAgain) { syncAgain = false; schedulePush(50); }
   }
 }
 
-async function push() {
-  if (synced === null) return;               // never overwrite the server before a first successful pull
-  const json = serialize();
-  if (json === synced) return;
-  await api('save', { json }, state.token);
-  synced = json;
-}
-
-function schedulePush() {
+function schedulePush(delay = 350) {
   clearTimeout(pushTimer);
-  pushTimer = setTimeout(async () => {
-    if (!state.token) return;
-    try { await push(); setStatus('Synced'); }
-    catch (e) { if (!authFailed(e)) setStatus(e.code === 0 ? 'Offline – will retry' : e.message); }
-  }, 800);
+  pushTimer = setTimeout(syncNow, delay);
 }
 
-async function syncOnce() {
-  if (!state.token || syncRunning) return;
-  syncRunning = true;
+async function poll() {
+  if (!state.token || syncRunning || document.hidden || prevDoc === null) return;
   try {
-    if (synced === null || serialize() === synced) await pull(); else await push();
-    setStatus('Synced');
+    const r = await api('rev', null, state.token);
+    if (r.rev !== knownRev) syncNow();
   } catch (e) { if (!authFailed(e)) setStatus(e.code === 0 ? 'Offline – will retry' : e.message); }
-  finally { syncRunning = false; }
 }
 
 function startSync() {
   stopSync();
-  synced = null;
   setStatus('Syncing…');
-  syncOnce();
-  pollTimer = setInterval(syncOnce, 20000);
+  syncNow();
+  pollTimer = setInterval(poll, 2000);
 }
 function stopSync() { clearInterval(pollTimer); clearTimeout(pushTimer); pollTimer = null; }
-document.addEventListener('visibilitychange', () => { if (!document.hidden) syncOnce(); });
+document.addEventListener('visibilitychange', () => { if (!document.hidden) syncNow(); });
 
 function signOut() {
   stopSync();
-  state.token = null; state.lists = []; synced = null; state.pwOpen = false;
-  LS.del('cl.token'); LS.del('cl.lists');
+  state.token = null; state.lists = []; prevDoc = null; knownRev = null; state.pwOpen = false;
+  LS.del('cl.token'); LS.del('cl.lists'); LS.del('cl.doc');
   location.hash = '';
   render();
 }
@@ -260,15 +342,14 @@ function progressBar(l) {
 }
 
 /* ----- swipe (touch / pen) ----- */
-function swipeable(card, { right, left, rightLabel, rightIcon }) {
+function swipeable(card, { right, rightLabel, rightIcon }) {
   const wrap = h('div', { class: 'swipe' },
     h('div', { class: 'swipe-bg' },
-      h('div', { class: 'l' }, icon(rightIcon || 'check'), rightLabel || ''),
-      h('div', { class: 'r' }, 'Delete', icon('trash'))),
+      h('div', { class: 'l' }, icon(rightIcon || 'check'), rightLabel || '')),
     card);
   card.classList.add('swipe-card');
   let sx = 0, sy = 0, dx = 0, active = false, tracking = false, pid = null;
-  const reset = () => { wrap.classList.add('snap'); card.style.transform = ''; wrap.classList.remove('dir-left', 'dir-right'); };
+  const reset = () => { wrap.classList.add('snap'); card.style.transform = ''; wrap.classList.remove('dir-right'); };
   card.addEventListener('pointerdown', e => {
     if (e.pointerType === 'mouse' || e.target.closest('button')) return;
     sx = e.clientX; sy = e.clientY; dx = 0; tracking = true; active = false; pid = e.pointerId; wrap.classList.remove('snap');
@@ -281,17 +362,15 @@ function swipeable(card, { right, left, rightLabel, rightIcon }) {
       else if (Math.abs(my) > 12) { tracking = false; return; }
       else return;
     }
-    dx = (!right && mx > 0) ? 0 : mx;
+    dx = Math.max(0, mx);   // swipe right only (done / not done); there is no swipe-to-delete
     card.style.transform = `translateX(${dx}px)`;
     wrap.classList.toggle('dir-right', dx > 8);
-    wrap.classList.toggle('dir-left', dx < -8);
   });
   const end = () => {
     if (!tracking) return;
     tracking = false;
     const w = wrap.offsetWidth, limit = w / 3; // must drag a third of the way across
     if (active && dx > limit && right) { reset(); right(); }
-    else if (active && dx < -limit && left) { wrap.classList.add('leaving'); setTimeout(left, 240); }
     else reset();
     active = false;
   };
@@ -311,9 +390,7 @@ function listCard(l, current) {
       remaining(l) > 0 ? h('div', { class: 'count', text: String(remaining(l)) }) : l.items.length ? h('div', { class: 'count' }, icon('check')) : null),
     l.items.length ? progressBar(l) : null);
   applyVars(card, listVars(l));
-  const wrap = swipeable(card, { left: () => { state.lists = state.lists.filter(x => x !== l); if (route().name === 'list' && route().list === l) go(''); changed(); } });
-  wrap.querySelector('.swipe-bg .l').style.display = 'none';
-  return wrap;
+  return card;
 }
 
 function allCard(r) {
@@ -416,7 +493,7 @@ function taskRow(l, item, noDrag = false) {
     ta,
     item.c || noDrag ? null : h('button', { class: 'drag', type: 'button', 'aria-label': 'Drag to reorder', onpointerdown: e => startReorder(e, l, item) }, icon('drag')),
     h('button', { class: 'del', type: 'button', 'aria-label': 'Delete task', onclick: remove }, icon('close')));
-  const wrap = swipeable(card, { right: toggle, left: remove, rightLabel: item.c ? 'Not done' : 'Done', rightIcon: item.c ? 'undo' : 'check' });
+  const wrap = swipeable(card, { right: toggle, rightLabel: item.c ? 'Not done' : 'Done', rightIcon: item.c ? 'undo' : 'check' });
   wrap.dataset.uid = item.uid;
   return wrap;
 }

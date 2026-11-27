@@ -4,6 +4,7 @@ import android.content.SharedPreferences
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import org.json.JSONArray
 import org.json.JSONObject
 import java.io.IOException
 import java.net.HttpURLConnection
@@ -21,7 +22,7 @@ fun normalizeServerUrl(raw: String): String {
 
 class ApiException(val code: Int, message: String) : IOException(message)
 
-class Remote(val json: String?, val updatedAt: Long)
+class Remote(val doc: JSONArray?, val rev: Long)
 
 /** Talks to server/api.php. The app never sees the database or its password. */
 class Api(server: String) {
@@ -36,11 +37,16 @@ class Api(server: String) {
 
     fun fetch(token: String): Remote {
         val o = call("get", token, null)
-        return Remote(if (o.isNull("json")) null else o.getString("json"), o.optLong("updatedAt"))
+        return Remote(o.optJSONArray("doc"), o.optLong("rev"))
     }
 
-    fun push(token: String, json: String) {
-        call("save", token, JSONObject().put("json", json))
+    /** Cheap "has anything changed?" check; the number goes up whenever anyone saves. */
+    fun rev(token: String): Long = call("rev", token, null).optLong("rev")
+
+    /** Sends our copy; the server merges it with everyone else's and returns the combined document. */
+    fun sync(token: String, doc: JSONArray): Remote {
+        val o = call("sync", token, JSONObject().put("doc", doc))
+        return Remote(o.getJSONArray("doc"), o.optLong("rev"))
     }
 
     private fun call(action: String, token: String?, body: JSONObject?): JSONObject {
@@ -79,6 +85,6 @@ class Session(private val prefs: SharedPreferences) {
 
     fun signOut() {
         token = null; status = ""
-        prefs.edit().remove("token").apply()
+        prefs.edit().remove("token").remove("doc").apply()
     }
 }

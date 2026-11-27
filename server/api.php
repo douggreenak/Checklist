@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 header('Content-Type: application/json; charset=utf-8');
+require __DIR__ . '/merge.php';
 header('Cache-Control: no-store');
 header('X-Content-Type-Options: nosniff');
 
@@ -101,21 +102,48 @@ try {
         respond(200, ['token' => makeToken($cfg['token_secret'] . $newHash)]);
     }
 
-    if ($action === 'get') {
+    // Reads the stored document (upgrading an old one) and its revision, which only ever goes up.
+    $load = function () use ($pdo): array {
         $r = $pdo->query('SELECT body, updated_at FROM checklist_data WHERE id = 1')->fetch(PDO::FETCH_ASSOC);
-        respond(200, ['json' => $r ? $r['body'] : null, 'updatedAt' => $r ? (int)$r['updated_at'] : 0]);
+        if (!$r) return [null, 0];
+        $doc = json_decode($r['body'], true);
+        return [is_array($doc) ? cl_normalize($doc) : [], (int)$r['updated_at']];
+    };
+
+    if ($action === 'rev') {
+        $r = $pdo->query('SELECT updated_at FROM checklist_data WHERE id = 1')->fetchColumn();
+        respond(200, ['rev' => $r ? (int)$r : 0]);
     }
 
-    if ($action === 'save' && $_SERVER['REQUEST_METHOD'] === 'POST') {
-        $json = $in['json'] ?? null;
-        if (!is_string($json) || !is_array(json_decode($json, true))) respond(400, ['error' => 'Bad data']);
-        $now = (int)(microtime(true) * 1000);
-        $exists = $pdo->query('SELECT COUNT(*) FROM checklist_data WHERE id = 1')->fetchColumn() > 0;
-        $pdo->prepare($exists
-            ? 'UPDATE checklist_data SET body = ?, updated_at = ? WHERE id = 1'
-            : 'INSERT INTO checklist_data (body, updated_at, id) VALUES (?, ?, 1)')->execute([$json, $now]);
-        respond(200, ['updatedAt' => $now]);
+    if ($action === 'get') {
+        [$doc, $rev] = $load();
+        respond(200, ['doc' => $doc, 'json' => $doc === null ? null : json_encode($doc), 'rev' => $rev, 'updatedAt' => $rev]);
     }
+
+    // Merges the sender's copy into the stored one and returns the result, so edits from two people combine.
+    if ($action === 'sync' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+        $mine = $in['doc'] ?? null;
+        if (!is_array($mine)) respond(400, ['error' => 'Bad data']);
+        $mysql = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME) === 'mysql'; // the test setup uses SQLite, which needs no lock here
+        if ($mysql && !$pdo->query("SELECT GET_LOCK('checklist_sync', 10)")->fetchColumn()) respond(503, ['error' => 'Busy, try again']);
+        try {
+            [$stored, $rev] = $load();
+            $merged = cl_merge($stored ?? [], $mine);
+            $body = json_encode($merged);
+            if ($stored === null || json_encode($stored) !== $body) {
+                $rev = max((int)(microtime(true) * 1000), $rev + 1);
+                $pdo->prepare($stored === null
+                    ? 'INSERT INTO checklist_data (body, updated_at, id) VALUES (?, ?, 1)'
+                    : 'UPDATE checklist_data SET body = ?, updated_at = ? WHERE id = 1')->execute([$body, $rev]);
+            }
+        } finally {
+            if ($mysql) $pdo->query("SELECT RELEASE_LOCK('checklist_sync')");
+        }
+        respond(200, ['doc' => $merged, 'rev' => $rev]);
+    }
+
+    // Older app versions overwrote everything on save, which would undo other people's edits.
+    if ($action === 'save') respond(426, ['error' => 'Please update the app to keep syncing']);
 
     respond(404, ['error' => 'Unknown action']);
 } catch (Throwable $e) {
