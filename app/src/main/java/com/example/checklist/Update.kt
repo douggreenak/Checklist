@@ -5,7 +5,7 @@ import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
 
-class UpdateInfo(val version: String, val url: String, val notes: String)
+class UpdateInfo(val version: String, val url: String, val notes: String, val apkUrl: String = "")
 
 object Updates {
     private const val LATEST = "https://api.github.com/repos/douggreenak/Checklist/releases/latest"
@@ -49,7 +49,9 @@ object Updates {
             if (code !in 300..399 || location == null || "/releases/tag/" !in location) return null // no releases yet
             val tag = location.substringAfter("/releases/tag/").substringBefore('?').substringBefore('/')
             if (!isNewer(tag, current)) return null
-            return UpdateInfo(tag.removePrefix("v"), "https://github.com/douggreenak/Checklist/releases/tag/$tag", "")
+            val v = tag.removePrefix("v")
+            return UpdateInfo(v, "https://github.com/douggreenak/Checklist/releases/tag/$tag", "",
+                "https://github.com/douggreenak/Checklist/releases/download/$tag/Checklist-$v.apk")
         } finally {
             c.disconnect()
         }
@@ -70,12 +72,12 @@ object Updates {
             val tag = o.getString("tag_name")
             if (!isNewer(tag, current)) return null
             val assets = o.optJSONArray("assets")
-            var url = o.optString("html_url")
+            val page = o.optString("html_url"); var apk = ""
             if (assets != null) for (i in 0 until assets.length()) {
                 val a = assets.getJSONObject(i)
-                if (a.optString("name").endsWith(".apk", ignoreCase = true)) { url = a.getString("browser_download_url"); break }
+                if (a.optString("name").endsWith(".apk", ignoreCase = true)) { apk = a.getString("browser_download_url"); break }
             }
-            return UpdateInfo(tag.removePrefix("v"), url, o.optString("body"))
+            return UpdateInfo(tag.removePrefix("v"), page, o.optString("body"), apk)
         } finally {
             c.disconnect()
         }

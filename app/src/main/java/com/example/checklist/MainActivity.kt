@@ -35,6 +35,16 @@ class MainActivity : ComponentActivity() {
             var inSettings by rememberSaveable { mutableStateOf(false) }
             var update by remember { mutableStateOf<UpdateInfo?>(null) }
             var updateDismissed by remember { mutableStateOf(false) }
+            var installProgress by remember { mutableStateOf<Float?>(null) }
+            var installMessage by remember { mutableStateOf<String?>(null) }
+            val installScope = rememberCoroutineScope()
+            val startInstall: (UpdateInfo) -> Unit = { info ->
+                if (installProgress == null) installScope.launch {
+                    installMessage = null; installProgress = 0f
+                    installMessage = Installer.downloadAndInstall(this@MainActivity, info) { installProgress = it }
+                    installProgress = null
+                }
+            }
             // Quietly look for a newer GitHub release each time the app starts.
             LaunchedEffect(Unit) {
                 update = try { withContext(Dispatchers.IO) { Updates.check(version) } } catch (e: IOException) { null }
@@ -72,6 +82,7 @@ class MainActivity : ComponentActivity() {
                         account = session.server, syncStatus = session.status,
                         version = version,
                         onCheckUpdate = { withContext(Dispatchers.IO) { Updates.check(version) } },
+                        onInstall = startInstall, installProgress = installProgress, installMessage = installMessage,
                         onSignOut = { session.signOut(); inSettings = false; openId = null },
                         onChangePassword = { current, new ->
                             try {
@@ -94,7 +105,8 @@ class MainActivity : ComponentActivity() {
                         onDelete = { lists.remove(it) },
                         onSettings = { inSettings = true },
                         update = update.takeUnless { updateDismissed },
-                        onUpdate = { update?.let { uriHandler.openUri(it.url) } },
+                        onUpdate = { update?.let(startInstall) },
+                        installProgress = installProgress, installMessage = installMessage,
                         onDismissUpdate = { updateDismissed = true }
                     )
                 }

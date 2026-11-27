@@ -24,6 +24,8 @@ fun HomeScreen(
     onSettings: () -> Unit = {},
     update: UpdateInfo? = null,
     onUpdate: () -> Unit = {},
+    installProgress: Float? = null,
+    installMessage: String? = null,
     onDismissUpdate: () -> Unit = {}
 ) {
     val todo = lists.sumOf { it.remaining }
@@ -70,7 +72,10 @@ fun HomeScreen(
                         Spacer(Modifier.width(14.dp))
                         Column(Modifier.weight(1f).padding(vertical = 8.dp)) {
                             Text("Update available", fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                            Text("Version ${update.version} · tap to download", fontSize = 16.sp)
+                            Text(
+                                installMessage ?: if (installProgress != null) "Downloading… ${(installProgress * 100).toInt()}%" else "Version ${update.version} · tap to install",
+                                fontSize = 16.sp
+                            )
                         }
                         IconButton(onClick = onDismissUpdate, modifier = Modifier.size(64.dp)) {
                             Icon(painterResource(R.drawable.ic_close), "Dismiss", modifier = Modifier.size(26.dp))

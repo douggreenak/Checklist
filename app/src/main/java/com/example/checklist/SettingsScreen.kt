@@ -28,7 +28,10 @@ fun SettingsScreen(
     passwordFormOpen: Boolean = false,
     version: String = "",
     /** Returns the newer release, or null if up to date. May throw IOException. */
-    onCheckUpdate: (suspend () -> UpdateInfo?)? = null
+    onCheckUpdate: (suspend () -> UpdateInfo?)? = null,
+    onInstall: (UpdateInfo) -> Unit = {},
+    installProgress: Float? = null,
+    installMessage: String? = null
 ) {
     ClearFocusWhenKeyboardHides()
     Scaffold(
@@ -89,7 +92,7 @@ fun SettingsScreen(
                 ) { Text("Sign out", fontSize = 18.sp, color = DeleteRed) }
             }
 
-            if (onCheckUpdate != null) UpdateSection(version, onCheckUpdate)
+            if (onCheckUpdate != null) UpdateSection(version, onCheckUpdate, onInstall, installProgress, installMessage)
 
             OutlinedButton(
                 onClick = { settings.reset() },
@@ -102,21 +105,25 @@ fun SettingsScreen(
 }
 
 @Composable
-private fun UpdateSection(version: String, check: suspend () -> UpdateInfo?) {
+private fun UpdateSection(
+    version: String, check: suspend () -> UpdateInfo?,
+    onInstall: (UpdateInfo) -> Unit, installProgress: Float?, installMessage: String?
+) {
     var checking by remember { mutableStateOf(false) }
     var message by remember { mutableStateOf<String?>(null) }
     var found by remember { mutableStateOf<UpdateInfo?>(null) }
     val scope = rememberCoroutineScope()
-    val uri = androidx.compose.ui.platform.LocalUriHandler.current
 
     Section("About")
     Text("Checklist $version", fontSize = 18.sp, color = MaterialTheme.colorScheme.onBackground)
     if (message != null) Text(message!!, fontSize = 17.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
     val update = found
+    if (installMessage != null) Text(installMessage, fontSize = 17.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
     if (update != null) Button(
-        onClick = { uri.openUri(update.url) },
+        onClick = { onInstall(update) },
+        enabled = installProgress == null,
         modifier = Modifier.fillMaxWidth().height(68.dp), shape = RoundedCornerShape(16.dp)
-    ) { Text("Download ${update.version}", fontSize = 19.sp) }
+    ) { Text(if (installProgress != null) "Downloading… ${(installProgress * 100).toInt()}%" else "Install ${update.version}", fontSize = 19.sp) }
     OutlinedButton(
         onClick = {
             scope.launch {
