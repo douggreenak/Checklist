@@ -43,6 +43,6 @@ class ChecklistScreenTest {
         rule.onNodeWithText("Completed", substring = true).assertExists().performClick()
         rule.waitForIdle()
         assert(list.showCompleted)
-        rule.onNodeWithTag("task-row").assertExists()
+        if (rule.onAllNodesWithTag("task-row").fetchSemanticsNodes().isEmpty()) throw AssertionError("TREE: " + rule.onRoot().printToString(100))
     }
 }
