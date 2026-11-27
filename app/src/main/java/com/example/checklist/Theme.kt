@@ -20,6 +20,9 @@ val Palette: List<Int> = listOf(
 
 class Accent(val color: Color, val on: Color)
 
+/** A calmer version of an accent for big buttons, so they don't shout. */
+fun Accent.softer(): Accent { val c = lerp(color, Color.Black, 0.3f); return Accent(c, onColor(c)) }
+
 private fun onColor(c: Color) = if (c.luminance() > 0.5f) Color(0xFF16141C) else Color.White
 
 /** The color to draw a list (or the app theme) with, adjusted so it reads well in light or dark mode. */

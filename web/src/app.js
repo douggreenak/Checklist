@@ -112,6 +112,7 @@ function applyTheme() {
   const vars = schemeVars(state.settings.color, dark, state.settings.black);
   applyVars(document.documentElement, vars);
   document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
+  document.documentElement.dataset.theme = dark ? 'dark' : 'light';
   document.querySelector('meta[name=theme-color]').setAttribute('content', vars['--surface']);
 }
 const listVars = l => schemeVars(l.argb, isDark(), state.settings.black);

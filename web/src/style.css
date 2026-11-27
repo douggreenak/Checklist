@@ -76,7 +76,7 @@ svg { width:24px; height:24px; fill:currentColor; flex:none; }
 .filled-btn:disabled { opacity:.6; }
 
 .fab-wrap { position:sticky; bottom:20px; display:flex; justify-content:flex-end; padding:0 20px 20px; margin-top:-90px; pointer-events:none; }
-.fab { pointer-events:auto; display:inline-flex; align-items:center; gap:12px; height:80px; padding:0 34px 0 28px; border:0; border-radius:28px; background:var(--primary); color:var(--on-primary); font-size:1.3rem; font-weight:700; box-shadow:var(--shadow); transition:border-radius .4s var(--spring),transform .4s var(--spring),box-shadow .2s; }
+.fab { pointer-events:auto; display:inline-flex; align-items:center; gap:12px; height:80px; padding:0 34px 0 28px; border:0; border-radius:28px; background:color-mix(in srgb,var(--primary) 70%,black); color:#fff; font-size:1.3rem; font-weight:700; box-shadow:var(--shadow); transition:border-radius .4s var(--spring),transform .4s var(--spring),box-shadow .2s; }
 .fab svg { width:32px; height:32px; }
 .fab:hover { border-radius:36px; }
 .fab:active { transform:scale(.94); }
@@ -235,3 +235,5 @@ dialog .swatch { width:68px; height:68px; }
 .all-card .avatar { display:grid; place-items:center; }
 .all-card .avatar svg { width:30px; height:30px; }
 .menu button:disabled { opacity:.4; }
+
+:root[data-theme=dark] .fab { background:var(--primary-container); color:var(--on-primary-container); }

@@ -110,7 +110,7 @@ fun ListScreen(list: TaskList, onBack: () -> Unit, onDeleteList: () -> Unit) {
             Button(
                 onClick = { addAfter(active.lastOrNull()) },
                 shape = RoundedCornerShape(24.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = accent.color, contentColor = accent.on),
+                colors = accent.softer().let { ButtonDefaults.buttonColors(containerColor = it.color, contentColor = it.on) },
                 modifier = Modifier.fillMaxWidth().navigationBarsPadding().imePadding().padding(16.dp).height(76.dp)
             ) {
                 Icon(painterResource(R.drawable.ic_add), null, modifier = Modifier.size(30.dp))

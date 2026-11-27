@@ -50,6 +50,8 @@ fun HomeScreen(
             Button(
                 onClick = onAdd,
                 shape = RoundedCornerShape(24.dp),
+                colors = Accent(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.onPrimary).softer()
+                    .let { ButtonDefaults.buttonColors(containerColor = it.color, contentColor = it.on) },
                 modifier = Modifier.fillMaxWidth().navigationBarsPadding().padding(16.dp).height(76.dp)
             ) {
                 Icon(painterResource(R.drawable.ic_add), null, modifier = Modifier.size(30.dp))
